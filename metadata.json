@@ -1,0 +1,6 @@
+{
+  "name": "Cachorro Feliz - Gestión Integral",
+  "description": "Sistema centralizado de gestión para Cachorro Feliz: ventas, producción con mermas complejas, inventario de materias primas y producto terminado, compras, proveedores, clientes, mascotas y estados financieros.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

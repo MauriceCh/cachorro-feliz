@@ -1,0 +1,149 @@
+{
+  "entities": {
+    "rawMaterials": {
+      "title": "Raw Material",
+      "description": "Inventory of raw materials with gross stock, net usable stock, preparation loss percentage, and weighted average costs",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "unit": { "type": "string" },
+        "stockGross": { "type": "number" },
+        "preparationLossPercentage": { "type": "number" },
+        "stockNetUsable": { "type": "number" },
+        "weightedAvgGrossCostPerUnit": { "type": "number" },
+        "weightedAvgNetCostPerUnit": { "type": "number" },
+        "supplierId": { "type": "string" },
+        "minStockThreshold": { "type": "number" }
+      },
+      "required": ["name", "unit", "stockGross", "stockNetUsable", "weightedAvgNetCostPerUnit"]
+    },
+    "finishedProducts": {
+      "title": "Finished Product",
+      "description": "Inventory of packaged artisanal treats",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "recipeId": { "type": "string" },
+        "packageSizeGrams": { "type": "number" },
+        "stockUnits": { "type": "number" },
+        "currentUnitCost": { "type": "number" },
+        "salePrice": { "type": "number" },
+        "category": { "type": "string" }
+      },
+      "required": ["name", "recipeId", "packageSizeGrams", "stockUnits", "currentUnitCost", "salePrice"]
+    },
+    "recipes": {
+      "title": "Recipe",
+      "description": "Production recipes with preparation & cooking/dehydration loss percentages",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "rawMixTotalGrams": { "type": "number" },
+        "cookingOrDehydrationLossPercentage": { "type": "number" },
+        "postCookFinalYieldGrams": { "type": "number" },
+        "standardPackageSizes": { "type": "array", "items": { "type": "number" } }
+      },
+      "required": ["name", "category", "rawMixTotalGrams", "cookingOrDehydrationLossPercentage"]
+    },
+    "productionBatches": {
+      "title": "Production Batch",
+      "description": "Kitchen batch logs calculating exact ingredient costs, cooking loss, fixed cost allocation, and unit yield cost",
+      "properties": {
+        "id": { "type": "string" },
+        "batchNumber": { "type": "string" },
+        "recipeId": { "type": "string" },
+        "recipeName": { "type": "string" },
+        "date": { "type": "string" },
+        "batchMultiplier": { "type": "number" },
+        "rawMixWeightGrams": { "type": "number" },
+        "actualFinalYieldGrams": { "type": "number" },
+        "rawMaterialsCostTotal": { "type": "number" },
+        "allocatedFixedCost": { "type": "number" },
+        "totalBatchCost": { "type": "number" },
+        "costPerFinishedUnit": { "type": "number" }
+      },
+      "required": ["batchNumber", "recipeId", "totalBatchCost"]
+    },
+    "purchases": {
+      "title": "Purchase Record",
+      "description": "Raw material purchases with gross quantity, gross total paid, specific preparation loss %, and real net unit cost",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "supplierName": { "type": "string" },
+        "rawMaterialId": { "type": "string" },
+        "rawMaterialName": { "type": "string" },
+        "quantityBoughtGross": { "type": "number" },
+        "grossTotalPaid": { "type": "number" },
+        "specificLossPercentage": { "type": "number" },
+        "netUsableGrams": { "type": "number" },
+        "realCostPerNetGram": { "type": "number" }
+      },
+      "required": ["date", "rawMaterialId", "quantityBoughtGross", "grossTotalPaid"]
+    },
+    "inventoryAdjustments": {
+      "title": "Inventory Adjustment",
+      "description": "Manual adjustments for damage, expiration, courtesy samples, or count reconciliation",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "itemType": { "type": "string" },
+        "itemId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "quantityAdjusted": { "type": "number" },
+        "reason": { "type": "string" },
+        "unitCost": { "type": "number" },
+        "financialLossValue": { "type": "number" },
+        "notes": { "type": "string" }
+      },
+      "required": ["date", "itemType", "itemId", "quantityAdjusted", "reason"]
+    },
+    "clients": {
+      "title": "Client",
+      "description": "Pet owners and pets directory",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string font" }
+      },
+      "required": ["name", "phone"]
+    },
+    "sales": {
+      "title": "Sale",
+      "description": "Customer sales and order tracking",
+      "properties": {
+        "id": { "type": "string" },
+        "saleNumber": { "type": "string" },
+        "date": { "type": "string font" },
+        "clientId": { "type": "string" },
+        "total": { "type": "number" },
+        "status": { "type": "string" }
+      },
+      "required": ["saleNumber", "clientId", "total", "status"]
+    },
+    "suppliers": {
+      "title": "Supplier",
+      "description": "Raw material suppliers directory",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "fixedCosts": {
+      "title": "Fixed Cost",
+      "description": "Monthly operational fixed costs (rent, utilities, labor)",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "monthlyAmount": { "type": "number" },
+        "category": { "type": "string" }
+      },
+      "required": ["name", "monthlyAmount", "category"]
+    }
+  }
+}

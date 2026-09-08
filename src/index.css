@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #FAF8F5;
+    color: #333333;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Bebas Neue', 'Oswald', sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .font-bebas {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  .font-sans-clean {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+.bg-canvas {
+  background-color: #FAF8F5;
+}
+
+/* Marca Principal & Galletas Orgánicas (#334c5c / #f8b46b) */
+.brand-petrol {
+  background-color: #334c5c;
+}
+.text-brand-petrol {
+  color: #334c5c;
+}
+.brand-gold {
+  background-color: #f8b46b;
+}
+.text-brand-gold {
+  color: #f8b46b;
+}
+.border-brand-gold {
+  border-color: #f8b46b;
+}
+
+/* Deshidratados Pollo (#f39205 / #001253) */
+.brand-chicken-bg {
+  background-color: #f39205;
+}
+.brand-chicken-text {
+  color: #001253;
+}
+
+/* Deshidratados Res (#e84b1e / #ffffff) */
+.brand-beef-bg {
+  background-color: #e84b1e;
+}
+
+/* Deshidratados Cerdo (#794092 / #b7d588) */
+.brand-pork-bg {
+  background-color: #794092;
+}
+.brand-pork-text {
+  color: #b7d588;
+}
+
+.border-warm {
+  border-color: #E0D7C6;
+}
+
+
