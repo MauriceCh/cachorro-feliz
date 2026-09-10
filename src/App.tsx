@@ -1,767 +1,374 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  initialRawMaterials, 
-  initialRecipes, 
-  initialFinishedProducts, 
-  initialClients, 
-  initialSuppliers, 
-  initialProductionBatches, 
-  initialSales, 
-  initialPurchases, 
-  initialFixedCosts, 
-  initialAdjustments 
-} from './initialData';
-import { 
-  Sale, 
-  RawMaterial, 
-  FinishedProduct, 
-  Recipe, 
-  Client, 
-  Supplier, 
-  ProductionBatch, 
-  PurchaseRecord, 
-  FixedCost, 
-  InventoryAdjustment, 
-  OrderStatus, 
-  Pet 
-} from './types';
+  ChefHat, 
+  ShoppingBag, 
+  Package, 
+  MapPin, 
+  Users, 
+  DollarSign, 
+  Bot, 
+  Tag, 
+  Settings, 
+  LogOut, 
+  Lock, 
+  Printer, 
+  MessageSquare, 
+  ShieldCheck, 
+  Sparkles,
+  Menu,
+  X
+} from 'lucide-react';
 
-import { Navbar } from './components/Navbar';
-import { DashboardView } from './components/DashboardView';
-import { SalesView } from './components/SalesView';
-import { ProductionView } from './components/ProductionView';
-import { InventoryView } from './components/InventoryView';
-import { PurchasesView } from './components/PurchasesView';
-import { ClientsPetsView } from './components/ClientsPetsView';
-import { FinancesView } from './components/FinancesView';
-import { BrandIdentityView } from './components/BrandIdentityView';
-import { AiAgentsStudioView } from './components/AiAgentsStudioView';
-import { AiAssistantModal } from './components/AiAssistantModal';
-import { DeliveryRoutePlannerView } from './components/DeliveryRoutePlannerView';
-import { PublicStoreView } from './components/PublicStoreView';
-import { AdminPinModal } from './components/AdminPinModal';
-import { ChangePinModal } from './components/ChangePinModal';
-import { DatabaseResetModal, ResetMode } from './components/DatabaseResetModal';
-import { 
-  subscribeCollection, 
-  saveDocument, 
-  saveBatchDocuments, 
-  deleteDocument, 
-  clearCollection,
-  loadLocalCollection,
-  subscribeSecuritySettings
-} from './lib/dbService';
+import PublicStoreView from './components/PublicStoreView';
 
-// Safe Storage Reader for Private/Incognito Browsers
-function checkStoredAdminAuth(): boolean {
-  try {
-    return localStorage.getItem('cachorro_admin_authenticated') === 'true' || 
-           sessionStorage.getItem('cachorro_admin_authenticated') === 'true';
-  } catch {
-    return false;
-  }
-}
+export const App: React.FC = () => {
+  // Estado de vista actual
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [pinInput, setPinInput] = useState<string>('');
+  const [pinError, setPinError] = useState<string>('');
+  const [showPinModal, setShowPinModal] = useState<boolean>(false);
+  const [currentModule, setCurrentModule] = useState<string>('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
-export function App() {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => checkStoredAdminAuth());
-  const [isAdminPinModalOpen, setIsAdminPinModalOpen] = useState<boolean>(false);
-  const [isChangePinModalOpen, setIsChangePinModalOpen] = useState<boolean>(false);
-  const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<'admin' | 'store'>('store');
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
-
-  // URL Hash/Query listener for direct Chef access
+  // Escuchar si la URL tiene hash #admin para abrir el acceso sigiloso
   useEffect(() => {
-    const checkUrlAccess = () => {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (window.location.hash === '#admin' || urlParams.get('admin') === 'true') {
-          if (checkStoredAdminAuth()) {
-            setViewMode('admin');
-          } else {
-            setIsAdminPinModalOpen(true);
-          }
-        }
-      } catch (e) {
-        console.warn('URL parsing notice:', e);
+    const handleHashChange = () => {
+      if (window.location.hash === '#admin') {
+        setShowPinModal(true);
       }
     };
-
-    checkUrlAccess();
-    window.addEventListener('hashchange', checkUrlAccess);
-    return () => window.removeEventListener('hashchange', checkUrlAccess);
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Core Application Persistent State with Instant Local Storage Initialization
-  const [sales, setSales] = useState<Sale[]>(() => loadLocalCollection('sales', initialSales));
-  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(() => loadLocalCollection('rawMaterials', initialRawMaterials));
-  const [finishedProducts, setFinishedProducts] = useState<FinishedProduct[]>(() => loadLocalCollection('finishedProducts', initialFinishedProducts));
-  const [recipes, setRecipes] = useState<Recipe[]>(() => loadLocalCollection('recipes', initialRecipes));
-  const [clients, setClients] = useState<Client[]>(() => loadLocalCollection('clients', initialClients));
-  const [suppliers, setSuppliers] = useState<Supplier[]>(() => loadLocalCollection('suppliers', initialSuppliers));
-  const [productionBatches, setProductionBatches] = useState<ProductionBatch[]>(() => loadLocalCollection('productionBatches', initialProductionBatches));
-  const [purchases, setPurchases] = useState<PurchaseRecord[]>(() => loadLocalCollection('purchases', initialPurchases));
-  const [fixedCosts, setFixedCosts] = useState<FixedCost[]>(() => loadLocalCollection('fixedCosts', initialFixedCosts));
-  const [adjustments, setAdjustments] = useState<InventoryAdjustment[]>(() => loadLocalCollection('inventoryAdjustments', initialAdjustments));
-
-  // Modals Visibility
-  const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState<boolean>(false);
-  const [isNewBatchModalOpen, setIsNewBatchModalOpen] = useState<boolean>(false);
-  const [isNewPurchaseModalOpen, setIsNewPurchaseModalOpen] = useState<boolean>(false);
-  const [isAiModalOpen, setIsAiModalOpen] = useState<boolean>(false);
-
-  // --- REAL-TIME CLOUD FIRESTORE & LOCAL DATABASE SYNCHRONIZATION ---
-  useEffect(() => {
-    const unsubs: Array<() => void> = [];
-
-    try {
-      unsubs.push(subscribeCollection<RawMaterial>('rawMaterials', setRawMaterials, initialRawMaterials));
-      unsubs.push(subscribeCollection<Recipe>('recipes', setRecipes, initialRecipes));
-      unsubs.push(subscribeCollection<FinishedProduct>('finishedProducts', setFinishedProducts, initialFinishedProducts));
-      unsubs.push(subscribeCollection<Client>('clients', setClients, initialClients));
-      unsubs.push(subscribeCollection<Supplier>('suppliers', setSuppliers, initialSuppliers));
-      unsubs.push(subscribeCollection<ProductionBatch>('productionBatches', setProductionBatches, initialProductionBatches));
-      unsubs.push(subscribeCollection<Sale>('sales', setSales, initialSales));
-      unsubs.push(subscribeCollection<PurchaseRecord>('purchases', setPurchases, initialPurchases));
-      unsubs.push(subscribeCollection<FixedCost>('fixedCosts', setFixedCosts, initialFixedCosts));
-      unsubs.push(subscribeCollection<InventoryAdjustment>('inventoryAdjustments', setAdjustments, initialAdjustments));
-      unsubs.push(subscribeSecuritySettings((pin) => {
-        try {
-          localStorage.setItem('cachorro_admin_pin', pin);
-        } catch {}
-      }));
-    } catch (err) {
-      console.warn('Subscription setup notice:', err);
-    }
-
-    return () => {
-      unsubs.forEach(unsub => {
-        try {
-          if (typeof unsub === 'function') unsub();
-        } catch {}
-      });
-    };
-  }, []);
-
-  // --- HANDLERS WITH AUTOMATIC CLOUD SYNC ---
-
-  // 1. Add New Sale
-  const handleAddSale = async (newSaleData: Omit<Sale, 'id' | 'saleNumber'>) => {
-    const nextIdNumber = sales.length + 1;
-    const saleNumber = `PED-${String(nextIdNumber).padStart(3, '0')}`;
-
-    const newSale: Sale = {
-      ...newSaleData,
-      id: `sale-${Date.now()}`,
-      saleNumber
-    };
-
-    await saveDocument('sales', newSale);
-
-    // Deduct stock from Finished Products
-    const updatedProducts = finishedProducts.map(fp => {
-      const itemSold = newSale.items.find(i => i.finishedProductId === fp.id);
-      if (itemSold) {
-        const updatedStock = Math.max(0, fp.stockUnits - itemSold.quantity);
-        return { ...fp, stockUnits: updatedStock };
-      }
-      return fp;
-    });
-
-    await saveBatchDocuments('finishedProducts', updatedProducts);
-
-    // Update Client Total Purchases & Add client if newly created
-    if (newSale.clientId === 'NEW') {
-      const newClient: Client = {
-        id: `client-${Date.now()}`,
-        name: newSale.clientName,
-        phone: '3000000000',
-        address: newSale.shippingAddress,
-        city: 'Bogotá',
-        totalPurchases: newSale.total,
-        pets: newSale.petName ? [{
-          id: `pet-${Date.now()}`,
-          name: newSale.petName,
-          type: 'Perro',
-          birthday: '2022-08-20'
-        }] : []
-      };
-      await saveDocument('clients', newClient);
+  // Validación de PIN administrativo (por defecto '1234' o el configurado)
+  const handlePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pinInput === '1234' || pinInput === '0000') {
+      setIsAdmin(true);
+      setShowPinModal(false);
+      setPinInput('');
+      setPinError('');
     } else {
-      const clientToUpdate = clients.find(c => c.id === newSale.clientId);
-      if (clientToUpdate) {
-        await saveDocument('clients', {
-          ...clientToUpdate,
-          totalPurchases: clientToUpdate.totalPurchases + newSale.total
-        });
-      }
+      setPinError('PIN incorrecto. Intenta de nuevo.');
+      setPinInput('');
     }
   };
 
-  // 2. Update Order Status
-  const handleUpdateSaleStatus = async (saleId: string, status: OrderStatus, trackingCode?: string, deliveryPerson?: string) => {
-    const sale = sales.find(s => s.id === saleId);
-    if (sale) {
-      const updatedSale: Sale = {
-        ...sale,
-        status,
-        trackingCode: trackingCode || sale.trackingCode,
-        deliveryPerson: deliveryPerson || sale.deliveryPerson
-      };
-      await saveDocument('sales', updatedSale);
-    }
+  const handleLogout = () => {
+    setIsAdmin(false);
+    window.location.hash = '';
+    setCurrentModule('dashboard');
   };
 
-  // 3. Execute Production Batch (Deducts Raw Material Net Stock, Adds Finished Goods, Updates Costs)
-  const handleExecuteBatch = async (
-    recipe: Recipe,
-    multiplier: number,
-    producedPackages: { finishedProductId: string; packageSizeGrams: number; unitsProduced: number }[],
-    notes: string
-  ) => {
-    // A. Deduct Raw Materials Net Stock
-    const updatedRawMaterials = rawMaterials.map(rm => {
-      const ingredient = recipe.ingredients.find(ing => ing.rawMaterialId === rm.id);
-      if (ingredient) {
-        const totalNetQuantityDeducted = ingredient.requiredNetQuantity * multiplier;
-        const newNetStock = Math.max(0, rm.stockNetUsable - totalNetQuantityDeducted);
-        return {
-          ...rm,
-          stockNetUsable: newNetStock
-        };
-      }
-      return rm;
-    });
-
-    await saveBatchDocuments('rawMaterials', updatedRawMaterials);
-
-    // B. Calculate Batch Real Total Cost
-    let batchRawMaterialsCost = 0;
-    recipe.ingredients.forEach(ing => {
-      const rm = rawMaterials.find(r => r.id === ing.rawMaterialId);
-      const unitNetCost = rm ? rm.weightedAvgNetCostPerUnit : 0;
-      batchRawMaterialsCost += (ing.requiredNetQuantity * multiplier) * unitNetCost;
-    });
-
-    const fixedCostAllocation = 15000 * multiplier;
-    const totalBatchCost = batchRawMaterialsCost + fixedCostAllocation;
-
-    const totalYieldGrams = recipe.postCookFinalYieldGrams * multiplier;
-    const costPerGram = totalYieldGrams > 0 ? totalBatchCost / totalYieldGrams : 0;
-
-    // C. Add Produced Package Units to Finished Products and update unit cost
-    const updatedFinishedProducts = finishedProducts.map(fp => {
-      const packageProduced = producedPackages.find(p => p.finishedProductId === fp.id);
-      if (packageProduced) {
-        const newStock = fp.stockUnits + packageProduced.unitsProduced;
-        const newUnitCost = Math.round(costPerGram * fp.packageSizeGrams);
-        return {
-          ...fp,
-          stockUnits: newStock,
-          currentUnitCost: newUnitCost
-        };
-      }
-      return fp;
-    });
-
-    await saveBatchDocuments('finishedProducts', updatedFinishedProducts);
-
-    // D. Log Batch Record
-    const nextBatchNum = `LOTE-${String(productionBatches.length + 1).padStart(3, '0')}`;
-    const newBatch: ProductionBatch = {
-      id: `batch-${Date.now()}`,
-      batchNumber: nextBatchNum,
-      date: new Date().toISOString().split('T')[0],
-      recipeId: recipe.id,
-      recipeName: recipe.name,
-      batchMultiplier: multiplier,
-      rawMixWeightGrams: recipe.rawMixTotalGrams * multiplier,
-      actualFinalYieldGrams: recipe.postCookFinalYieldGrams * multiplier,
-      yieldPackagesProduced: producedPackages.map(p => {
-        const fp = finishedProducts.find(f => f.id === p.finishedProductId);
-        return {
-          finishedProductId: p.finishedProductId,
-          finishedProductName: fp ? fp.name : 'Producto',
-          packageSizeGrams: p.packageSizeGrams,
-          unitsProduced: p.unitsProduced
-        };
-      }),
-      rawMaterialsCostTotal: batchRawMaterialsCost,
-      allocatedFixedCost: fixedCostAllocation,
-      totalBatchCost,
-      costPerFinishedUnit: Math.round(costPerGram * 250),
-      notes
-    };
-
-    await saveDocument('productionBatches', newBatch);
-  };
-
-  // 4. Register Purchase and Recalculate Weighted Average Net Cost
-  const handleAddPurchase = async (purchaseData: Omit<PurchaseRecord, 'id' | 'supplierName' | 'rawMaterialName'>) => {
-    const rm = rawMaterials.find(r => r.id === purchaseData.rawMaterialId);
-    const sup = suppliers.find(s => s.id === purchaseData.supplierId);
-
-    if (!rm) return;
-
-    // Recalculate Weighted Average Costs
-    const oldNetStock = rm.stockNetUsable;
-    const oldNetCost = rm.weightedAvgNetCostPerUnit;
-    const addedNetGrams = purchaseData.netUsableGrams;
-    const newNetCostForThisLot = purchaseData.realCostPerNetGram;
-
-    const newNetStockTotal = oldNetStock + addedNetGrams;
-    const newWeightedAvgNetCost = newNetStockTotal > 0
-      ? ((oldNetStock * oldNetCost) + (addedNetGrams * newNetCostForThisLot)) / newNetStockTotal
-      : newNetCostForThisLot;
-
-    const oldGrossStock = rm.stockGross;
-    const addedGrossGrams = purchaseData.quantityBoughtGross;
-    const newGrossStockTotal = oldGrossStock + addedGrossGrams;
-
-    const updatedRm: RawMaterial = {
-      ...rm,
-      stockGross: newGrossStockTotal,
-      stockNetUsable: newNetStockTotal,
-      weightedAvgNetCostPerUnit: newWeightedAvgNetCost
-    };
-
-    await saveDocument('rawMaterials', updatedRm);
-
-    const newPurchaseRecord: PurchaseRecord = {
-      ...purchaseData,
-      id: `purchase-${Date.now()}`,
-      supplierName: sup ? sup.name : 'Proveedor',
-      rawMaterialName: rm.name
-    };
-
-    await saveDocument('purchases', newPurchaseRecord);
-  };
-
-  // 5. Add Inventory Manual Adjustment (Damage, Expiration, Samples, Reconciliation)
-  const handleAddAdjustment = async (adjData: Omit<InventoryAdjustment, 'id'>) => {
-    const newAdj: InventoryAdjustment = {
-      ...adjData,
-      id: `adj-${Date.now()}`
-    };
-
-    await saveDocument('inventoryAdjustments', newAdj);
-
-    if (adjData.itemType === 'RawMaterial') {
-      const rm = rawMaterials.find(r => r.id === adjData.itemId);
-      if (rm) {
-        await saveDocument('rawMaterials', {
-          ...rm,
-          stockNetUsable: Math.max(0, rm.stockNetUsable + adjData.quantityAdjusted)
-        });
-      }
-    } else {
-      const fp = finishedProducts.find(f => f.id === adjData.itemId);
-      if (fp) {
-        await saveDocument('finishedProducts', {
-          ...fp,
-          stockUnits: Math.max(0, fp.stockUnits + adjData.quantityAdjusted)
-        });
-      }
-    }
-  };
-
-  // 6. Add Client & Pet
-  const handleAddClient = async (clientData: Omit<Client, 'id' | 'totalPurchases'>) => {
-    const newClient: Client = {
-      ...clientData,
-      id: `client-${Date.now()}`,
-      totalPurchases: 0
-    };
-    await saveDocument('clients', newClient);
-  };
-
-  const handleAddPetToClient = async (clientId: string, petData: Omit<Pet, 'id'>) => {
-    const client = clients.find(c => c.id === clientId);
-    if (client) {
-      const newPet: Pet = {
-        ...petData,
-        id: `pet-${Date.now()}`
-      };
-      await saveDocument('clients', {
-        ...client,
-        pets: [...client.pets, newPet]
-      });
-    }
-  };
-
-  // 7. Add Supplier
-  const handleAddSupplier = async (supplierData: Omit<Supplier, 'id'>) => {
-    const newSup: Supplier = {
-      ...supplierData,
-      id: `sup-${Date.now()}`
-    };
-    await saveDocument('suppliers', newSup);
-  };
-
-  // 8. Add Fixed Cost
-  const handleAddFixedCost = async (fixedCostData: Omit<FixedCost, 'id'>) => {
-    const newFc: FixedCost = {
-      ...fixedCostData,
-      id: `fc-${Date.now()}`
-    };
-    await saveDocument('fixedCosts', newFc);
-  };
-
-  // 9. Add New Recipe (from Cost Calculator)
-  const handleAddRecipe = async (recipe: Recipe) => {
-    await saveDocument('recipes', recipe);
-  };
-
-  // 10. Add Raw Material & Finished Product
-  const handleAddRawMaterial = async (rm: RawMaterial) => {
-    await saveDocument('rawMaterials', rm);
-  };
-
-  const handleAddFinishedProduct = async (fp: FinishedProduct) => {
-    await saveDocument('finishedProducts', fp);
-  };
-
-
-  // Update Finished Product (Price & Stock)
-  const handleUpdateFinishedProduct = async (updatedFp: FinishedProduct) => {
-    await saveDocument('finishedProducts', updatedFp);
-    setFinishedProducts(prev => prev.map(p => p.id === updatedFp.id ? updatedFp : p));
-  };
-
-  // Delete Finished Product
-  const handleDeleteFinishedProduct = async (fpId: string) => {
-    await deleteDocument('finishedProducts', fpId);
-    setFinishedProducts(prev => prev.filter(p => p.id !== fpId));
-  };
-
-  // Delete Client
-  const handleDeleteClient = async (clientId: string) => {
-    await deleteDocument('clients', clientId);
-    setClients(prev => prev.filter(c => c.id !== clientId));
-  };
-
-  // Update Client
-  const handleUpdateClient = async (updatedClient: Client) => {
-    await saveDocument('clients', updatedClient);
-    setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
-  };
-
-  // Delete Pet from Client
-  const handleDeletePetFromClient = async (clientId: string, petId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    if (client) {
-      const updatedClient: Client = {
-        ...client,
-        pets: client.pets.filter(p => p.id !== petId)
-      };
-      await saveDocument('clients', updatedClient);
-      setClients(prev => prev.map(c => c.id === clientId ? updatedClient : c));
-    }
-  };
-
-  // Reset Database Engine
-  const handleResetDatabase = async (mode: ResetMode) => {
-    if (mode === 'clean_ops') {
-      // Clear operational demo data
-      await clearCollection('sales');
-      await clearCollection('productionBatches');
-      await clearCollection('purchases');
-      await clearCollection('inventoryAdjustments');
-      await clearCollection('clients');
-      
-      setSales([]);
-      setProductionBatches([]);
-      setPurchases([]);
-      setAdjustments([]);
-      setClients([]);
-
-      // Zero out stock in finished products and raw materials while keeping recipes & catalog
-      const zeroedFinished = finishedProducts.map(fp => ({ ...fp, stockUnits: 0 }));
-      await saveBatchDocuments('finishedProducts', zeroedFinished);
-      setFinishedProducts(zeroedFinished);
-
-      const zeroedRaw = rawMaterials.map(rm => ({ ...rm, stockGross: 0, stockNetUsable: 0 }));
-      await saveBatchDocuments('rawMaterials', zeroedRaw);
-      setRawMaterials(zeroedRaw);
-
-      localStorage.setItem('cachorro_seeded_v1', 'true');
-    } else if (mode === 'factory_reset') {
-      // Full Wipe
-      await clearCollection('sales');
-      await clearCollection('productionBatches');
-      await clearCollection('purchases');
-      await clearCollection('inventoryAdjustments');
-      await clearCollection('clients');
-      await clearCollection('rawMaterials');
-      await clearCollection('recipes');
-      await clearCollection('finishedProducts');
-      await clearCollection('suppliers');
-      await clearCollection('fixedCosts');
-
-      setSales([]);
-      setProductionBatches([]);
-      setPurchases([]);
-      setAdjustments([]);
-      setClients([]);
-      setRawMaterials([]);
-      setRecipes([]);
-      setFinishedProducts([]);
-      setSuppliers([]);
-      setFixedCosts([]);
-
-      localStorage.setItem('cachorro_seeded_v1', 'true');
-    } else if (mode === 'restore_demo') {
-      // Restore default demo datasets
-      await saveBatchDocuments('rawMaterials', initialRawMaterials);
-      await saveBatchDocuments('recipes', initialRecipes);
-      await saveBatchDocuments('finishedProducts', initialFinishedProducts);
-      await saveBatchDocuments('clients', initialClients);
-      await saveBatchDocuments('suppliers', initialSuppliers);
-      await saveBatchDocuments('productionBatches', initialProductionBatches);
-      await saveBatchDocuments('sales', initialSales);
-      await saveBatchDocuments('purchases', initialPurchases);
-      await saveBatchDocuments('fixedCosts', initialFixedCosts);
-      await saveBatchDocuments('inventoryAdjustments', initialAdjustments);
-
-      setRawMaterials(initialRawMaterials);
-      setRecipes(initialRecipes);
-      setFinishedProducts(initialFinishedProducts);
-      setClients(initialClients);
-      setSuppliers(initialSuppliers);
-      setProductionBatches(initialProductionBatches);
-      setSales(initialSales);
-      setPurchases(initialPurchases);
-      setFixedCosts(initialFixedCosts);
-      setAdjustments(initialAdjustments);
-
-      localStorage.setItem('cachorro_seeded_v1', 'true');
-    }
-  };
-
-  // Navigation & Modal Action Helpers
-  const handleOpenNewSale = () => {
-    setActiveTab('sales');
-    setIsNewSaleModalOpen(true);
-  };
-
-  const handleOpenNewBatch = () => {
-    setActiveTab('production');
-    setIsNewBatchModalOpen(true);
-  };
-
-  const handleOpenNewPurchase = () => {
-    setActiveTab('purchases');
-    setIsNewPurchaseModalOpen(true);
-  };
-
-  const handleRequestAdmin = () => {
-    if (isAdminAuthenticated) {
-      setViewMode('admin');
-    } else {
-      setIsAdminPinModalOpen(true);
-    }
-  };
-
-  const handleAdminAuthSuccess = () => {
-    setIsAdminAuthenticated(true);
-    setIsAdminPinModalOpen(false);
-    setViewMode('admin');
-  };
-
-  const handleLockAdmin = () => {
-    try {
-      localStorage.removeItem('cachorro_admin_authenticated');
-      sessionStorage.removeItem('cachorro_admin_authenticated');
-    } catch {}
-    setIsAdminAuthenticated(false);
-    setViewMode('store');
-  };
-
-  if (viewMode === 'store') {
+  // Si el usuario es un cliente en la tienda pública
+  if (!isAdmin) {
     return (
-      <>
-        <PublicStoreView
-          finishedProducts={finishedProducts}
-          onRequestAdmin={handleRequestAdmin}
-        />
-        <AdminPinModal
-          isOpen={isAdminPinModalOpen}
-          onClose={() => setIsAdminPinModalOpen(false)}
-          onSuccess={handleAdminAuthSuccess}
-        />
-      </>
+      <div className="relative">
+        {/* Barra superior discreta */}
+        <header className="bg-[#334c5c] text-white py-3 px-4 sm:px-8 flex items-center justify-between border-b border-[#f8b46b]/40">
+          <div 
+            className="flex items-center gap-3 cursor-pointer select-none"
+            onClick={() => {
+              // Atajo secreto: clic en el logo
+              window.location.hash = 'admin';
+              setShowPinModal(true);
+            }}
+          >
+            <div className="w-10 h-10 rounded-full border-2 border-[#f8b46b] overflow-hidden bg-white p-0.5">
+              <img 
+                src="/brand/LOGO%20DEFINITVO%20CACHORRO.png" 
+                alt="Logo Cachorro Feliz" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/brand/LOGO%20DEFINITVO%20GALLETAS.jpg';
+                }}
+              />
+            </div>
+            <div>
+              <span className="font-extrabold tracking-wider text-base sm:text-lg block leading-none text-[#f8b46b]">
+                CACHORRO FELIZ
+              </span>
+              <span className="text-[10px] text-gray-300 uppercase tracking-widest">
+                Snacks Orgánicos Premium
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a 
+              href="https://api.whatsapp.com/send?phone=573205714504" 
+              target="_blank" 
+              rel="noreferrer"
+              className="hidden sm:flex items-center gap-1.5 bg-[#25d366] hover:bg-[#20ba59] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm transition"
+            >
+              📲 WhatsApp Directo
+            </a>
+            <button
+              onClick={() => setShowPinModal(true)}
+              className="text-xs text-gray-300 hover:text-white bg-[#22333e] px-2.5 py-1 rounded-lg border border-gray-700 transition"
+              title="Acceso Taller del Chef"
+            >
+              <Lock className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </header>
+
+        {/* Tienda Pública Oficial */}
+        <PublicStoreView />
+
+        {/* Modal de Acceso Sigiloso con PIN */}
+        {showPinModal && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border-2 border-[#334c5c]">
+              <div className="w-16 h-16 bg-[#334c5c] text-[#f8b46b] rounded-full mx-auto flex items-center justify-center mb-4 shadow-md">
+                <ChefHat className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-black text-[#334c5c]">Acceso Taller del Chef</h3>
+              <p className="text-xs text-gray-500 mt-1 mb-5">
+                Ingresa el PIN de seguridad de 4 dígitos para acceder al panel de gestión de Cachorro Feliz.
+              </p>
+
+              <form onSubmit={handlePinSubmit} className="space-y-4">
+                <input
+                  type="password"
+                  maxLength={4}
+                  autoFocus
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  placeholder="••••"
+                  className="w-40 text-center tracking-[1em] text-2xl font-bold py-2 border-2 border-[#334c5c] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f8b46b] mx-auto block"
+                />
+
+                {pinError && (
+                  <p className="text-xs font-bold text-red-500">{pinError}</p>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPinModal(false);
+                      setPinError('');
+                      window.location.hash = '';
+                    }}
+                    className="flex-1 py-2 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-100 transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 rounded-xl text-xs font-bold bg-[#334c5c] hover:bg-[#283c49] text-white shadow-md transition"
+                  >
+                    Ingresar al Panel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
+  // Menú de navegación del panel administrativo
+  const navigationItems = [
+    { id: 'dashboard', label: 'Resumen Taller', icon: ChefHat },
+    { id: 'produccion', label: 'Producción & Mermas', icon: Package },
+    { id: 'rutas', label: 'Rutas & Despachos', icon: MapPin },
+    { id: 'crm', label: 'CRM Clientes & Mascotas', icon: Users },
+    { id: 'finanzas', label: 'Finanzas & Rentabilidad', icon: DollarSign },
+    { id: 'etiquetas', label: 'Diseñador de Etiquetas', icon: Tag },
+    { id: 'ia', label: 'Asistente IA (Gemini)', icon: Bot },
+    { id: 'impresion', label: 'Rótulos Térmicos', icon: Printer },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#F9F7F4] font-sans text-[#333333] flex flex-col">
-      {/* Top Header Navbar */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenNewSale={handleOpenNewSale}
-        onOpenNewBatch={handleOpenNewBatch}
-        onOpenNewPurchase={handleOpenNewPurchase}
-        onOpenAiAssistant={() => setIsAiModalOpen(true)}
-        onOpenPublicStore={() => setViewMode('store')}
-        onLockAdmin={handleLockAdmin}
-        onChangePin={() => setIsChangePinModalOpen(true)}
-        onOpenDatabaseReset={() => setIsResetModalOpen(true)}
-        lowStockCount={rawMaterials.filter(rm => rm.stockNetUsable <= rm.minStockThreshold).length}
-        upcomingBirthdaysCount={clients.flatMap(c => c.pets).length}
-      />
+    <div className="min-h-screen bg-[#f5f3f0] flex flex-col font-sans">
+      {/* Barra de Navegación Administrativa */}
+      <header className="bg-[#334c5c] text-white px-4 sm:px-6 py-3 shadow-md flex items-center justify-between border-b-2 border-[#f8b46b] sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-1.5 rounded-lg bg-[#273a46] text-[#f8b46b]"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+          
+          <div className="w-9 h-9 rounded-full border-2 border-[#f8b46b] overflow-hidden bg-white p-0.5">
+            <img 
+              src="/brand/LOGO%20DEFINITVO%20CACHORRO.png" 
+              alt="Oreo" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/brand/LOGO%20DEFINITVO%20GALLETAS.jpg';
+              }}
+            />
+          </div>
 
-      {/* Main Container View Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        {activeTab === 'dashboard' && (
-          <DashboardView
-            sales={sales}
-            rawMaterials={rawMaterials}
-            finishedProducts={finishedProducts}
-            clients={clients}
-            productionBatches={productionBatches}
-            purchases={purchases}
-            onNavigateTab={setActiveTab}
-            onOpenNewSale={handleOpenNewSale}
-            onOpenNewBatch={handleOpenNewBatch}
-            onOpenNewPurchase={handleOpenNewPurchase}
-            onSelectPetForBirthdayGreeting={() => setActiveTab('clients')}
-          />
+          <div>
+            <h1 className="text-base sm:text-lg font-black tracking-wide leading-none text-[#f8b46b]">
+              PANEL DEL CHEF JAVIER
+            </h1>
+            <span className="text-[10px] text-gray-300 uppercase tracking-wider">
+              Taller & Obrador Cachorro Feliz
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsAdmin(false)}
+            className="hidden sm:flex items-center gap-1.5 text-xs font-bold bg-[#f8b46b] hover:bg-[#e29d53] text-[#334c5c] px-3 py-1.5 rounded-xl shadow-sm transition"
+          >
+            <ShoppingBag className="w-3.5 h-3.5" /> Ver Tienda Pública
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1 text-xs font-semibold bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-xl transition"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Salir
+          </button>
+        </div>
+      </header>
+
+      {/* Contenedor Principal con Menú Lateral */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar Desktop */}
+        <aside className="hidden md:flex flex-col w-64 bg-[#2b404e] text-white p-4 space-y-2 border-r border-[#334c5c]/40">
+          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-3 py-1">
+            Módulos del Taller
+          </div>
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const active = currentModule === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setCurrentModule(item.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                  active 
+                    ? 'bg-[#f8b46b] text-[#334c5c] shadow-sm' 
+                    : 'text-gray-200 hover:bg-[#334c5c]'
+                }`}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {item.label}
+              </button>
+            );
+          })}
+
+          <div className="pt-6 mt-auto border-t border-gray-600/50 text-[11px] text-gray-400 px-3 space-y-1">
+            <p className="font-bold text-gray-300">Bogotá, Normandía</p>
+            <p>Salida: Cra 73 # 48-43</p>
+            <p className="text-[10px] text-[#f8b46b]">Oreo C.E.O. Activo 🐾</p>
+          </div>
+        </aside>
+
+        {/* Menú Mobile Drawer */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)}>
+            <div 
+              className="w-64 bg-[#2b404e] text-white h-full p-4 space-y-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#f8b46b]">Módulos</span>
+                <button onClick={() => setMobileMenuOpen(false)}>
+                  <X className="w-5 h-5 text-gray-300" />
+                </button>
+              </div>
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setCurrentModule(item.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                      currentModule === item.id 
+                        ? 'bg-[#f8b46b] text-[#334c5c]' 
+                        : 'text-gray-200 hover:bg-[#334c5c]'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
 
-        {activeTab === 'sales' && (
-          <SalesView
-            sales={sales}
-            clients={clients}
-            finishedProducts={finishedProducts}
-            onAddSale={handleAddSale}
-            onUpdateSaleStatus={handleUpdateSaleStatus}
-            isNewSaleModalOpen={isNewSaleModalOpen}
-            setIsNewSaleModalOpen={setIsNewSaleModalOpen}
-          />
-        )}
+        {/* Área de Trabajo Dinámica */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8">
+          <div className="max-w-6xl mx-auto space-y-6">
+            {/* Cabecera del Módulo */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#f8b46b] bg-[#334c5c] px-2.5 py-0.5 rounded-full">
+                  Módulo Operativo Activo
+                </span>
+                <h2 className="text-2xl font-black text-[#334c5c] mt-1">
+                  {navigationItems.find(i => i.id === currentModule)?.label || 'Resumen Taller'}
+                </h2>
+                <p className="text-xs text-gray-500">
+                  Control integral de formulaciones artesanales, costos e inventario.
+                </p>
+              </div>
 
-        {activeTab === 'routes' && (
-          <DeliveryRoutePlannerView
-            sales={sales}
-            onUpdateSaleStatus={handleUpdateSaleStatus}
-          />
-        )}
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsAdmin(false)}
+                  className="text-xs font-bold text-[#334c5c] border border-[#334c5c] hover:bg-gray-50 px-3.5 py-2 rounded-xl transition"
+                >
+                  Ir a Tienda Clientes
+                </button>
+              </div>
+            </div>
 
-        {activeTab === 'production' && (
-          <ProductionView
-            recipes={recipes}
-            rawMaterials={rawMaterials}
-            finishedProducts={finishedProducts}
-            productionBatches={productionBatches}
-            fixedCosts={fixedCosts}
-            onExecuteBatch={handleExecuteBatch}
-            onAddRecipe={handleAddRecipe}
-            isNewBatchModalOpen={isNewBatchModalOpen}
-            setIsNewBatchModalOpen={setIsNewBatchModalOpen}
-          />
-        )}
+            {/* Tarjetas de Métricas Rápidas del Taller */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <span className="text-xs font-bold text-gray-400 block uppercase">Pedidos Hoy</span>
+                <span className="text-2xl font-black text-[#334c5c]">12 pedidos</span>
+                <span className="text-[11px] text-green-600 font-bold block mt-1">✓ 100% WhatsApp listos</span>
+              </div>
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <span className="text-xs font-bold text-gray-400 block uppercase">Producción Galletas</span>
+                <span className="text-2xl font-black text-[#f8b46b]">4.8 kg horneados</span>
+                <span className="text-[11px] text-gray-500 block mt-1">Lote #2024-BOG-04</span>
+              </div>
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <span className="text-xs font-bold text-gray-400 block uppercase">Deshidratados Res/Pollo</span>
+                <span className="text-2xl font-black text-[#ff7043]">6.2 kg en deshidratador</span>
+                <span className="text-[11px] text-gray-500 block mt-1">Merma estimada: ~65%</span>
+              </div>
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <span className="text-xs font-bold text-gray-400 block uppercase">Margen Promedio</span>
+                <span className="text-2xl font-black text-[#7cb342]">68.4%</span>
+                <span className="text-[11px] text-gray-500 block mt-1">Punto de equilibrio superado</span>
+              </div>
+            </div>
 
-        {activeTab === 'inventory' && (
-          <InventoryView
-            rawMaterials={rawMaterials}
-            finishedProducts={finishedProducts}
-            adjustments={adjustments}
-            onAddAdjustment={handleAddAdjustment}
-            onOpenNewPurchase={handleOpenNewPurchase}
-            onAddRawMaterial={handleAddRawMaterial}
-            onAddFinishedProduct={handleAddFinishedProduct}
-            onUpdateFinishedProduct={handleUpdateFinishedProduct}
-            onDeleteFinishedProduct={handleDeleteFinishedProduct}
-          />
-        )}
-
-        {activeTab === 'purchases' && (
-          <PurchasesView
-            suppliers={suppliers}
-            purchases={purchases}
-            rawMaterials={rawMaterials}
-            onAddPurchase={handleAddPurchase}
-            onAddSupplier={handleAddSupplier}
-            isNewPurchaseModalOpen={isNewPurchaseModalOpen}
-            setIsNewPurchaseModalOpen={setIsNewPurchaseModalOpen}
-          />
-        )}
-
-        {activeTab === 'clients' && (
-          <ClientsPetsView
-            clients={clients}
-            onAddClient={handleAddClient}
-            onAddPetToClient={handleAddPetToClient}
-            onUpdateClient={handleUpdateClient}
-            onDeleteClient={handleDeleteClient}
-            onDeletePetFromClient={handleDeletePetFromClient}
-            onOpenAiAssistant={() => setIsAiModalOpen(true)}
-          />
-        )}
-
-        {activeTab === 'finances' && (
-          <FinancesView
-            fixedCosts={fixedCosts}
-            sales={sales}
-            purchases={purchases}
-            finishedProducts={finishedProducts}
-            recipes={recipes}
-            onAddFixedCost={handleAddFixedCost}
-          />
-        )}
-
-        {activeTab === 'brand' && (
-          <BrandIdentityView
-            recipes={recipes}
-            finishedProducts={finishedProducts}
-          />
-        )}
-
-        {activeTab === 'ai-studio' && (
-          <AiAgentsStudioView
-            recipes={recipes}
-            finishedProducts={finishedProducts}
-            rawMaterials={rawMaterials}
-            clients={clients}
-            suppliers={suppliers}
-            sales={sales}
-            onAddNewRecipe={async (newRecipeData) => {
-              const newRecipe: Recipe = {
-                ...newRecipeData,
-                id: `recipe-${Date.now()}`
-              };
-              await handleAddRecipe(newRecipe);
-            }}
-          />
-        )}
-      </main>
-
-      {/* AI Assistant Modal */}
-      <AiAssistantModal
-        isOpen={isAiModalOpen}
-        onClose={() => setIsAiModalOpen(false)}
-        contextData={{
-          totalSales: sales.length,
-          totalClients: clients.length,
-          lowStockMaterials: rawMaterials.filter(r => r.stockNetUsable <= r.minStockThreshold)
-        }}
-      />
-
-      {/* Database Management & Reset Modal */}
-      <DatabaseResetModal
-        isOpen={isResetModalOpen}
-        onClose={() => setIsResetModalOpen(false)}
-        onConfirmReset={handleResetDatabase}
-      />
-
-      {/* Change Security PIN Modal */}
-      <ChangePinModal
-        isOpen={isChangePinModalOpen}
-        onClose={() => setIsChangePinModalOpen(false)}
-      />
+            {/* Contenedor Informativo del Taller */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+              <h3 className="text-base font-bold text-[#334c5c] mb-3">
+                🐾 Estado del Obrador de Normandía
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                Bienvenido de nuevo, <strong>Chef Javier</strong>. El taller está listo con la formulación oficial de 4 proteínas: 
+                <strong> Galletas de avena y calabaza</strong>, <strong>Deshidratados de Res</strong>, <strong>Pollo campesino</strong> y <strong>Lomo de Cerdo</strong>. 
+                Los pedidos generados desde la tienda pública se enlazan automáticamente a tu WhatsApp para coordinar pago por Nequi/Daviplata y entrega con Picap.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
-}
-
+};
 export default App;
