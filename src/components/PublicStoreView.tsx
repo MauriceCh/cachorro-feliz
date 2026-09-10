@@ -1,673 +1,482 @@
 import React, { useState } from 'react';
-import { FinishedProduct } from '../types';
-import { BrandLogoEmblem } from './BrandLogoEmblem';
-import { 
-  ShoppingBag, 
-  Sparkles, 
-  Heart, 
-  ChefHat, 
-  ShieldCheck, 
-  Clock, 
-  MapPin, 
-  Send, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  Dog, 
-  Calendar, 
-  CheckCircle2, 
-  Phone, 
-  ChevronRight,
-  Info,
-  X,
-  CreditCard,
-  Truck,
-  Lock
-} from 'lucide-react';
+import { ShoppingBag, MessageCircle, Heart, ShieldCheck, Truck, Sparkles, Plus, Minus, Check, MapPin, Award } from 'lucide-react';
 
-interface CartItem {
-  product: FinishedProduct;
-  quantity: number;
+interface ProductItem {
+  id: string;
+  name: string;
+  category: 'galletas' | 'deshidratados-res' | 'deshidratados-pollo' | 'deshidratados-cerdo';
+  categoryLabel: string;
+  badge: string;
+  description: string;
+  price100g: number;
+  price250g?: number;
+  price500g?: number;
+  image: string;
+  ingredients: string;
+  benefits: string[];
 }
 
-interface PublicStoreViewProps {
-  finishedProducts: FinishedProduct[];
-  onRequestAdmin?: () => void;
-}
+const PRODUCTS: ProductItem[] = [
+  {
+    id: 'galletas-clasicas',
+    name: 'Galletas Artesanales Horneadas',
+    category: 'galletas',
+    categoryLabel: 'Galletas Orgánicas',
+    badge: 'Receta Insignia de Oreo',
+    description: 'Elaboradas a fuego lento con avena integral, calabaza orgánica y toque de manzana fresca. Textura crujiente ideal para la higiene dental.',
+    price100g: 15000,
+    price250g: 32000,
+    price500g: 58000,
+    image: '/brand/LOGO%20DEFINITVO%20GALLETAS.jpg',
+    ingredients: 'Avena en hojuelas, pulpa de calabaza 100% natural, harina de coco, manzana criolla, aceite de coco virgen virgen.',
+    benefits: ['Ricas en fibra prebiótica', 'Sin harinas refinadas', 'Cero azúcar y sal añadida']
+  },
+  {
+    id: 'deshidratado-res',
+    name: 'Deshidratados Premium de Res',
+    category: 'deshidratados-res',
+    categoryLabel: 'Deshidratados Res',
+    badge: '100% Carne Magra',
+    description: 'Cortes seleccionados de res deshidratados a temperatura controlada por 16 horas para preservar proteínas, hierro y enzimas esenciales.',
+    price100g: 22000,
+    price250g: 48000,
+    price500g: 88000,
+    image: '/brand/LOGO%20DEFINITVO%20DESHIDRATADOS%20RES.png',
+    ingredients: '100% solomito y pulpa magra de res fresca inspeccionada.',
+    benefits: ['Alto valor biológico', 'Premio masticable de alta palatabilidad', 'Monoproteico y bajo en grasa']
+  },
+  {
+    id: 'deshidratado-pollo',
+    name: 'Tiras Deshidratadas de Pollo',
+    category: 'deshidratados-pollo',
+    categoryLabel: 'Deshidratados Pollo',
+    badge: 'Pechuga 100% Natural',
+    description: 'Finas láminas de pechuga de pollo deshidratadas lentamente. Snack suave, digestivo y altamente digestible para perros sensibles.',
+    price100g: 19000,
+    price250g: 42000,
+    price500g: 76000,
+    image: '/brand/LOGO%20DEFINITVO%20DESHIDRATADOS%20pollo.png',
+    ingredients: '100% pechuga de pollo campesino libre de conservantes.',
+    benefits: ['Fácil asimilación gástrica', 'Ideal para cachorros y adultos mayores', 'Excelente refuerzo en adiestramiento']
+  },
+  {
+    id: 'deshidratado-cerdo',
+    name: 'Snacks Crocantes de Lomo de Cerdo',
+    category: 'deshidratados-cerdo',
+    categoryLabel: 'Deshidratados Cerdo',
+    badge: 'Sabor Irresistible',
+    description: 'Lomo limpio de cerdo deshidratado de forma artesanal. Aroma intenso natural que estimula el apetito y satisface su instinto carnívoro.',
+    price100g: 20000,
+    price250g: 44000,
+    price500g: 80000,
+    image: '/brand/LOGO%20DEFINITVO%20DESHIDRATADOS%20CERDO.png',
+    ingredients: '100% lomo y carne magra de cerdo fresca seleccionada.',
+    benefits: ['Rico en tiamina (Vit B1)', 'Alternativa para mascotas alérgicas a otras proteínas', '100% libre de aditivos']
+  }
+];
 
-export const PublicStoreView: React.FC<PublicStoreViewProps> = ({
-  finishedProducts,
-  onRequestAdmin
-}) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+export const PublicStoreView: React.FC = () => {
+  const [selectedCategory, setSelectedCategory] = useState<string>('todos');
+  const [cart, setCart] = useState<{ [key: string]: { item: ProductItem; grams: string; price: number; quantity: number } }>({});
+  const [selectedGrammage, setSelectedGrammage] = useState<{ [key: string]: '100g' | '250g' | '500g' }>({
+    'galletas-clasicas': '100g',
+    'deshidratado-res': '100g',
+    'deshidratado-pollo': '100g',
+    'deshidratado-cerdo': '100g',
+  });
 
-  // Customer Checkout Form
-  const [clientName, setClientName] = useState<string>('');
-  const [clientPhone, setClientPhone] = useState<string>('');
-  const [clientAddress, setClientAddress] = useState<string>('');
-  const [clientZone, setClientZone] = useState<string>('Bogotá');
-  const [petName, setPetName] = useState<string>('');
-  const [petBirthday, setPetBirthday] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<'Daviplata' | 'Nequi' | 'Bancolombia' | 'Contraentrega'>('Daviplata');
-  const [orderNotes, setOrderNotes] = useState<string>('');
+  // Datos del cliente para WhatsApp
+  const [clientName, setClientName] = useState('');
+  const [petName, setPetName] = useState('');
+  const [deliveryZone, setDeliveryZone] = useState('Norte de Bogotá ($8.000)');
+  const [address, setAddress] = useState('');
+  const [notes, setNotes] = useState('');
 
-  // Secret Chef Access: Triple click on the logo
-  const [secretClicks, setSecretClicks] = useState<number>(0);
-  const handleSecretLogoClick = () => {
-    const next = secretClicks + 1;
-    if (next >= 3) {
-      setSecretClicks(0);
-      if (onRequestAdmin) onRequestAdmin();
-    } else {
-      setSecretClicks(next);
-      setTimeout(() => setSecretClicks(0), 2000);
-    }
+  const filteredProducts = selectedCategory === 'todos' 
+    ? PRODUCTS 
+    : PRODUCTS.filter(p => p.category === selectedCategory);
+
+  const getPriceForGram = (product: ProductItem, grams: '100g' | '250g' | '500g') => {
+    if (grams === '250g' && product.price250g) return product.price250g;
+    if (grams === '500g' && product.price500g) return product.price500g;
+    return product.price100g;
   };
 
-  // Cart operations
-  const addToCart = (product: FinishedProduct) => {
-    const existing = cart.find(item => item.product.id === product.id);
-    if (existing) {
-      setCart(cart.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
-    } else {
-      setCart([...cart, { product, quantity: 1 }]);
-    }
-    setIsCartOpen(true);
+  const addToCart = (product: ProductItem) => {
+    const grams = selectedGrammage[product.id] || '100g';
+    const key = `${product.id}-${grams}`;
+    const price = getPriceForGram(product, grams);
+
+    setCart(prev => {
+      const current = prev[key];
+      return {
+        ...prev,
+        [key]: {
+          item: product,
+          grams,
+          price,
+          quantity: current ? current.quantity + 1 : 1
+        }
+      };
+    });
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
-    setCart(cart.map(item => {
-      if (item.product.id === productId) {
-        const newQty = item.quantity + delta;
-        return newQty > 0 ? { ...item, quantity: newQty } : null;
+  const updateQuantity = (key: string, delta: number) => {
+    setCart(prev => {
+      const current = prev[key];
+      if (!current) return prev;
+      const newQty = current.quantity + delta;
+      if (newQty <= 0) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
       }
-      return item;
-    }).filter(Boolean) as CartItem[]);
+      return {
+        ...prev,
+        [key]: { ...current, quantity: newQty }
+      };
+    });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter(item => item.product.id !== productId));
-  };
+  const totalCart = Object.values(cart).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalItemsCount = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
 
-  // Calculations
-  const subtotal = (cart || []).reduce((sum, item) => {
-    if (!item || !item.product) return sum;
-    const price = item.product.salePrice || 0;
-    const qty = item.quantity || 0;
-    return sum + (price * qty);
-  }, 0);
-  const isOutside = (clientZone || '').toLowerCase().includes('fuera') || (clientZone || '').toLowerCase().includes('nacional');
-  const shippingCost = clientZone === 'Recogida en Taller'
-    ? 0
-    : isOutside
-      ? 14000
-      : subtotal >= 65000 ? 0 : 8000;
-  const total = subtotal + shippingCost;
-  const totalItemsCount = (cart || []).reduce((sum, item) => sum + (item?.quantity || 0), 0);
-
-  // WhatsApp Order Submission
-  const handleSendWhatsAppOrder = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (cart.length === 0) {
-      alert('Tu carrito está vacío. Agrega tus snacks favoritos antes de continuar.');
-      return;
-    }
-    if (!clientName || !clientPhone || !clientAddress) {
-      alert('Por favor completa tu nombre, teléfono y dirección de entrega.');
+  const sendWhatsAppOrder = () => {
+    if (Object.keys(cart).length === 0) {
+      alert('Por favor agrega al menos un producto al carrito.');
       return;
     }
 
-    const itemsText = cart.map(i => `• ${i.quantity}x ${i.product.name} (${i.product.packageSizeGrams}g) - $${(i.product.salePrice * i.quantity).toLocaleString('es-CO')}`).join('\n');
-    
-    const message = `¡Hola Chef Javier! 🐾 Quiero realizar este pedido de *Cachorro Feliz*:
+    const itemsSummary = Object.values(cart)
+      .map(i => `• *${i.item.name}* (${i.grams}) x${i.quantity} = $${(i.price * i.quantity).toLocaleString('es-CO')}`)
+      .join('\n');
 
-👤 *Cliente:* ${clientName}
-📱 *Teléfono:* ${clientPhone}
-📍 *Dirección de Entrega:* ${clientAddress} (${clientZone})
-${petName ? `🐶 *Mascota:* ${petName} ${petBirthday ? `(🎂 Cumpleaños: ${petBirthday})` : ''}` : ''}
-
-🛒 *PRODUCTOS SOLICITADOS:*
-${itemsText}
-
-${shippingCost === 0 ? '🎁 *Envío:* GRATIS (Por compras mayores a $65.000)' : `📦 *Envío:* $${shippingCost.toLocaleString('es-CO')}`}
-💰 *TOTAL A PAGAR:* $${total.toLocaleString('es-CO')} COP
-
-💳 *Método de Pago Preferido:* ${paymentMethod}
-${orderNotes ? `📝 *Observaciones:* ${orderNotes}` : ''}
-
-Quedo atento(a) para confirmar la transferencia. ¡Muchas gracias! ❤️`;
+    const message = `¡Hola Chef Javier! 🐾 Quiero realizar un pedido para mi consentido:\n\n` +
+      `👤 *Tutor:* ${clientName || 'Cliente'}\n` +
+      `🐶 *Mascota:* ${petName || 'Perrito Feliz'}\n` +
+      `📍 *Zona de Envío:* ${deliveryZone}\n` +
+      (address ? `🏠 *Dirección:* ${address}\n` : '') +
+      (notes ? `📝 *Observaciones:* ${notes}\n` : '') +
+      `\n🛍️ *Resumen del Pedido:*\n${itemsSummary}\n\n` +
+      `💰 *Total Estimado Productos:* $${totalCart.toLocaleString('es-CO')} COP\n\n` +
+      `Quedo atento a los medios de pago (Nequi, Daviplata o Bancolombia) y fecha de horneado/despacho. ¡Muchas gracias!`;
 
     const encoded = encodeURIComponent(message);
     window.open(`https://api.whatsapp.com/send?phone=573205714504&text=${encoded}`, '_blank');
   };
 
-  const productList = Array.isArray(finishedProducts) && finishedProducts.length > 0 
-    ? finishedProducts 
-    : [];
-
-  const filteredProducts = productList.filter(p => {
-    if (!p) return false;
-    if (selectedCategory === 'Todos') return true;
-    return p.category === selectedCategory;
-  });
-
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-slate-800 font-sans">
-      {/* Top Banner */}
-      <div className="bg-[#2D463E] text-amber-100 text-xs py-2 px-4 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#D4A373]" />
-          <span>✨ <b>Recetas de Chef</b> • 100% Ingredientes de Grado Humano • Sin Conservantes</span>
-        </div>
-        <div className="hidden sm:flex items-center space-x-2 text-[11px] text-amber-200/80">
-          <Truck className="w-3.5 h-3.5" />
-          <span>🛵 Envíos a Bogotá & Todo el País</span>
-        </div>
-      </div>
-
-      {/* Header & Brand Identity */}
-      <header className="bg-white border-b border-[#E0D7C6] sticky top-0 z-30 shadow-xs">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div 
-            onClick={handleSecretLogoClick}
-            className="flex items-center space-x-3 cursor-pointer select-none"
-            title="Cachorro Feliz"
-          >
-            <BrandLogoEmblem variant="main" size="md" />
-            <div>
-              <h1 className="font-bebas text-2xl tracking-wider text-[#2D463E] leading-none">
-                CACHORRO FELIZ
-              </h1>
-              <p className="text-[11px] font-semibold text-[#EF8828] uppercase tracking-widest">
-                Una marca con historia
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <a
-              href="https://api.whatsapp.com/send?phone=573205714504&text=Hola%20Chef%20Javier!%20Tengo%20una%20consulta%20sobre%20Cachorro%20Feliz%20🐾"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:flex items-center space-x-1.5 text-xs font-bold text-[#2D463E] hover:text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200"
-            >
-              <Phone className="w-3.5 h-3.5 text-emerald-600" />
-              <span>WhatsApp: 3205714504</span>
-            </a>
-
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="bg-[#EF8828] hover:bg-[#d6761f] text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center space-x-2 shadow-md cursor-pointer relative active:scale-95 transition-all"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Ver Pedido</span>
-              {totalItemsCount > 0 && (
-                <span className="bg-white text-[#EF8828] w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-extrabold shadow-xs">
-                  {totalItemsCount}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section: Storytelling */}
-      <section className="bg-gradient-to-b from-white to-[#FAF8F5] border-b border-[#E0D7C6] py-12 px-4">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-          <div className="md:col-span-7 space-y-4">
-            <div className="inline-flex items-center space-x-2 bg-amber-100/70 border border-amber-300 text-amber-900 px-3 py-1 rounded-full text-xs font-bold">
-              <ChefHat className="w-4 h-4 text-[#EF8828]" />
-              <span>De la Cocina de un Chef para su Mejor Amigo</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#2D463E] font-display tracking-tight leading-tight">
-              Snacks Artesanales y Deshidratados que Cuidan la Vida de tu Mascota ❤️🐾
-            </h2>
-
-            <p className="text-slate-600 text-sm leading-relaxed">
-              En <b>Cachorro Feliz</b> cocinamos con ingredientes 100% orgánicos, limpios y aptos para consumo humano. Sin harinas refinadas, sin azúcar, sin conservantes químicos y con todo el amor y rigor gastronómico que tu peludo merece.
+    <div className="min-h-screen bg-[#fbf9f6] text-[#22292f] font-sans pb-20">
+      {/* Hero Banner Artesanal */}
+      <section className="relative bg-[#334c5c] text-white py-12 px-4 sm:px-6 lg:px-8 border-b-4 border-[#f8b46b] overflow-hidden">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="md:w-3/5 space-y-4 text-center md:text-left z-10">
+            <span className="inline-flex items-center gap-2 bg-[#f8b46b]/20 text-[#f8b46b] border border-[#f8b46b]/40 text-xs uppercase tracking-wider font-bold px-3 py-1 rounded-full">
+              <Award className="w-3.5 h-3.5" /> 100% Artesanal & Sin Químicos
+            </span>
+            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+              Snacks y Premios Naturales para Consentir a tu Mejor Amigo 🐾
+            </h1>
+            <p className="text-gray-200 text-sm sm:text-base max-w-xl leading-relaxed">
+              Formulados por el <strong>Chef Javier Mauricio</strong> junto a <strong>Oreo</strong> en nuestro taller gastronómico en Bogotá. Horneados lentamente, sin sal, sin azúcar y con ingredientes de grado humano.
             </p>
-
-            <div className="grid grid-cols-3 gap-3 pt-2">
-              <div className="bg-white p-3 rounded-xl border border-[#E0D7C6] shadow-xs text-center">
-                <ShieldCheck className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
-                <div className="text-[11px] font-bold text-slate-800">Grado Humano</div>
-                <div className="text-[10px] text-slate-500">Materia prima premium</div>
-              </div>
-              <div className="bg-white p-3 rounded-xl border border-[#E0D7C6] shadow-xs text-center">
-                <Heart className="w-5 h-5 text-[#EF8828] mx-auto mb-1" />
-                <div className="text-[11px] font-bold text-slate-800">100% Natural</div>
-                <div className="text-[10px] text-slate-500">Cero químicos</div>
-              </div>
-              <div className="bg-white p-3 rounded-xl border border-[#E0D7C6] shadow-xs text-center">
-                <Truck className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-                <div className="text-[11px] font-bold text-slate-800">Envíos Locales</div>
-                <div className="text-[10px] text-slate-500">Bogotá & Nacional</div>
-              </div>
+            <div className="pt-2 flex flex-wrap gap-3 justify-center md:justify-start text-xs font-semibold text-gray-300">
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-[#7cb342]" /> Registro Sanitario ICA en trámite</span>
+              <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-[#f8b46b]" /> Envíos a toda Bogotá y Colombia</span>
             </div>
           </div>
 
-          <div className="md:col-span-5 flex justify-center">
-            <div className="relative">
-              <div className="w-64 h-64 sm:w-72 sm:h-72 rounded-full border-8 border-white shadow-2xl overflow-hidden relative bg-[#334c5c]">
-                <img
-                  src="/brand/LOGO DEFINITVO CACHORRO.png"
-                  alt="Oreo, la inspiración de Cachorro Feliz"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-2 -right-2 bg-white px-4 py-2 rounded-2xl shadow-lg border border-amber-200 text-center">
-                <span className="text-[10px] font-extrabold text-[#EF8828] uppercase tracking-wider block">Oreo 🐾 (El C.E.O. de 4 Patas)</span>
-                <span className="font-bebas text-base text-[#2D463E] tracking-wide">"Una marca con historia"</span>
-              </div>
+          <div className="md:w-2/5 flex flex-col items-center justify-center relative">
+            <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-full border-4 border-[#f8b46b] shadow-2xl overflow-hidden bg-white">
+              <img 
+                src="/brand/LOGO%20DEFINITVO%20CACHORRO.png" 
+                alt="Oreo - Cachorro Feliz" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback al logo de galletas si no carga
+                  (e.target as HTMLImageElement).src = '/brand/LOGO%20DEFINITVO%20GALLETAS.jpg';
+                }}
+              />
             </div>
+            <p className="mt-3 text-xs tracking-wider text-[#f8b46b] uppercase font-bold flex items-center gap-1">
+              <span>Oreo</span> • C.E.O. & Catador Oficial 🐶
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Product Catalog Section */}
-      <section className="max-w-6xl mx-auto px-4 py-10">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-[#2D463E] font-display">
-              Nuestras Líneas de Snacks
-            </h3>
-            <p className="text-xs text-slate-500">
-              Selecciona los favoritos de tu mascota y enviaremos el pedido directo al WhatsApp del Chef.
-            </p>
-          </div>
-
-          {/* Category Tabs */}
-          <div className="flex space-x-2 overflow-x-auto pb-1">
-            {['Todos', 'Galletas', 'Deshidratados'].map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  selectedCategory === cat
-                    ? 'bg-[#2D463E] text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-[#E0D7C6] hover:bg-slate-50'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+      {/* Selector de Categorías */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+          {[
+            { id: 'todos', label: 'Todos los Snacks', color: '#334c5c' },
+            { id: 'galletas', label: '🍪 Galletas Horneadas', color: '#334c5c' },
+            { id: 'deshidratados-res', label: '🥩 Deshidratados de Res', color: '#ff7043' },
+            { id: 'deshidratados-pollo', label: '🍗 Deshidratados de Pollo', color: '#ffa726' },
+            { id: 'deshidratados-cerdo', label: '🥓 Deshidratados de Cerdo', color: '#ab47bc' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedCategory(tab.id)}
+              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all shadow-sm ${
+                selectedCategory === tab.id
+                  ? 'bg-[#334c5c] text-white shadow-md scale-105 border-2 border-[#f8b46b]'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map(prod => {
-            if (!prod) return null;
-            const prodName = prod.name || 'Snack Cachorro Feliz';
-            const isCerdo = prodName.toLowerCase().includes('cerdo');
-            const isRes = prodName.toLowerCase().includes('res');
-            const isPollo = prodName.toLowerCase().includes('pollo');
-            const isGalleta = (prod.category || '') === 'Galletas';
-
-            const badgeLogoVariant = isCerdo ? 'cerdo' : isRes ? 'res' : isPollo ? 'pollo' : isGalleta ? 'galletas' : 'main';
-
-            const cartItem = cart.find(c => c && c.product && c.product.id === prod.id);
+      {/* Grid de Productos */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+          {filteredProducts.map((product) => {
+            const currentGram = selectedGrammage[product.id] || '100g';
+            const currentPrice = getPriceForGram(product, currentGram);
 
             return (
-              <div
-                key={prod.id}
-                className="bg-white rounded-2xl border border-[#E0D7C6] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+              <div 
+                key={product.id}
+                className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden flex flex-col justify-between hover:shadow-xl transition-all duration-300"
               >
                 <div>
-                  {/* Card Header with Emblem */}
-                  <div className="p-5 bg-gradient-to-r from-[#FAF8F5] to-white border-b border-[#E0D7C6]/50 flex items-center space-x-3">
-                    <BrandLogoEmblem variant={badgeLogoVariant} size="sm" />
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#EF8828]">
-                        {prod.category} • {prod.packageSizeGrams}g
+                  <div className="p-6 flex flex-col sm:flex-row items-center gap-5 border-b border-gray-100 bg-gradient-to-r from-gray-50/50 to-white">
+                    <div className="w-32 h-32 flex-shrink-0 rounded-2xl border-2 border-gray-100 p-1 shadow-inner bg-white">
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="w-full h-full object-contain rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-1.5 text-center sm:text-left">
+                      <span className="inline-block text-[11px] font-bold text-[#f8b46b] bg-[#334c5c] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        {product.badge}
                       </span>
-                      <h4 className="font-bold text-[#2D463E] text-base leading-snug">
-                        {prod.name}
-                      </h4>
+                      <h3 className="text-xl font-bold text-[#334c5c] leading-snug">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {product.description}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Body & Benefits */}
-                  <div className="p-5 space-y-3 text-xs">
-                    <p className="text-slate-600 leading-relaxed">
-                      {isGalleta 
-                        ? 'Elaboradas con avena en hojuelas, zanahoria fresca, manzana, mantequilla de maní 100% natural, huevo y agua. ¡Crujientes y digestivas!'
-                        : `Proteína pura deshidratada lentamente a baja temperatura para preservar nutrientes, aroma y sabor irresistible.`}
-                    </p>
-
-                    <div className="bg-[#FAF8F5] p-3 rounded-xl border border-[#E0D7C6]/60 space-y-1">
-                      <div className="text-[10px] font-bold text-slate-500 uppercase">Beneficios Clave:</div>
-                      <div className="text-[11px] text-slate-700 space-y-0.5">
-                        <div>✨ Libre de sal, azúcar añadida y químicos</div>
-                        <div>✨ Alta palatabilidad y premio saludable</div>
-                        <div>✨ Apto para perros de todas las razas y edades</div>
+                  <div className="p-6 space-y-4">
+                    {/* Selector de Presentación */}
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
+                        Selecciona Presentación:
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['100g', '250g', '500g'] as const).map((gram) => (
+                          <button
+                            key={gram}
+                            type="button"
+                            onClick={() => setSelectedGrammage(prev => ({ ...prev, [product.id]: gram }))}
+                            className={`py-2 px-3 rounded-xl text-xs font-bold border text-center transition-all ${
+                              currentGram === gram
+                                ? 'border-[#334c5c] bg-[#334c5c] text-white shadow-sm'
+                                : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {gram}
+                          </button>
+                        ))}
                       </div>
+                    </div>
+
+                    {/* Beneficios */}
+                    <div className="bg-[#fbf9f6] p-3 rounded-xl border border-gray-100 space-y-1">
+                      <p className="text-[11px] font-bold text-[#334c5c] uppercase">Beneficios clave:</p>
+                      <ul className="text-xs text-gray-600 space-y-0.5">
+                        {product.benefits.map((b, idx) => (
+                          <li key={idx} className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#f8b46b]"></span>
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
                 </div>
 
-                {/* Footer Price & Add CTA */}
-                <div className="p-5 pt-0 border-t border-slate-100 flex items-center justify-between mt-2">
+                {/* Footer de Tarjeta con Precio y Botón */}
+                <div className="p-6 pt-0 flex items-center justify-between border-t border-gray-100 mt-2">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold block">Precio:</span>
-                    <span className="text-lg font-extrabold text-[#2D463E]">
-                      ${prod.salePrice.toLocaleString('es-CO')}
+                    <span className="text-xs text-gray-400 block font-medium">Precio ({currentGram})</span>
+                    <span className="text-2xl font-black text-[#334c5c]">
+                      ${currentPrice.toLocaleString('es-CO')}
+                      <span className="text-xs font-normal text-gray-500 ml-1">COP</span>
                     </span>
                   </div>
 
-                  {cartItem ? (
-                    <div className="flex items-center space-x-2 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded-xl">
-                      <button
-                        onClick={() => updateQuantity(prod.id, -1)}
-                        className="text-emerald-800 hover:bg-emerald-200 p-1 rounded-md cursor-pointer"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="font-bold text-emerald-900 text-xs w-4 text-center">
-                        {cartItem.quantity}
-                      </span>
-                      <button
-                        onClick={() => updateQuantity(prod.id, 1)}
-                        className="text-emerald-800 hover:bg-emerald-200 p-1 rounded-md cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => addToCart(prod)}
-                      className="bg-[#2D463E] hover:bg-[#233831] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-[#D4A373]" />
-                      <span>Agregar al Pedido</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => addToCart(product)}
+                    className="flex items-center gap-2 bg-[#f8b46b] hover:bg-[#e29d53] text-[#334c5c] font-black px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95"
+                  >
+                    <Plus className="w-4 h-4" /> Agregar
+                  </button>
                 </div>
               </div>
             );
           })}
         </div>
-      </section>
 
-      {/* Floating Cart Button for Mobile */}
-      {totalItemsCount > 0 && !isCartOpen && (
-        <div className="fixed bottom-6 right-6 z-40">
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="bg-[#EF8828] hover:bg-[#d6761f] text-white px-5 py-3.5 rounded-2xl font-bold text-sm shadow-2xl flex items-center space-x-3 cursor-pointer animate-bounce"
-          >
-            <ShoppingBag className="w-5 h-5" />
-            <span>Ver mi Pedido ({totalItemsCount})</span>
-            <span className="bg-white/20 px-2 py-0.5 rounded-lg text-xs">
-              ${total.toLocaleString('es-CO')}
-            </span>
-          </button>
-        </div>
-      )}
-
-      {/* Footer & Storytelling */}
-      <footer className="bg-[#1E302A] text-slate-300 py-12 px-4 mt-16 border-t border-slate-800">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
-          <div className="flex items-center space-x-3">
-            <BrandLogoEmblem variant="white" size="sm" />
+        {/* Resumen de Carrito y Checkout a WhatsApp */}
+        <section className="mt-14 bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-2 border-[#334c5c]/10">
+          <div className="flex items-center gap-3 border-b pb-4 mb-6">
+            <div className="p-3 bg-[#334c5c] text-white rounded-2xl">
+              <ShoppingBag className="w-6 h-6 text-[#f8b46b]" />
+            </div>
             <div>
-              <p className="font-bebas text-2xl tracking-wider text-amber-100 leading-none">CACHORRO FELIZ</p>
-              <p className="text-[11px] text-slate-400 font-medium">
-                Snacks artesanales de Chef con grado humano • Bogotá, Colombia
+              <h2 className="text-2xl font-extrabold text-[#334c5c]">
+                Tu Pedido de Snacks ({totalItemsCount} productos)
+              </h2>
+              <p className="text-xs text-gray-500">
+                Completa tus datos y confirmaremos tu despacho directamente por WhatsApp
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
-            <a
-              href="https://api.whatsapp.com/send?phone=573205714504&text=Hola%20Chef%20Javier!%20Tengo%20una%20consulta%20🐾"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-300 hover:text-amber-200 font-semibold transition-colors flex items-center space-x-1"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span>WhatsApp: 3205714504</span>
-            </a>
-          </div>
-        </div>
+          {Object.keys(cart).length === 0 ? (
+            <div className="text-center py-8 text-gray-400 space-y-2">
+              <p className="text-sm">Tu canasta está vacía. ¡Elige las delicias favoritas de tu peludo arriba!</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Lista de Items */}
+              <div className="divide-y divide-gray-100 max-h-60 overflow-y-auto pr-2">
+                {Object.entries(cart).map(([key, item]) => (
+                  <div key={key} className="py-3 flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <p className="font-bold text-sm text-[#334c5c]">{item.item.name}</p>
+                      <span className="text-xs text-gray-500 font-medium">Presentación: {item.grams} • ${item.price.toLocaleString('es-CO')} c/u</span>
+                    </div>
 
-        <div className="max-w-5xl mx-auto text-center text-[11px] text-slate-500 mt-8 pt-4 border-t border-slate-800/80">
-          © {new Date().getFullYear()} Cachorro Feliz. Una marca con historia. Todos los derechos reservados.
-        </div>
-      </footer>
-
-      {/* Cart & Checkout Modal / Drawer */}
-      {isCartOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 relative my-8">
-            <button
-              onClick={() => setIsCartOpen(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center space-x-2 pb-3 border-b border-slate-100 mb-4">
-              <div className="p-2 bg-[#EF8828] text-white rounded-lg">
-                <ShoppingBag className="w-5 h-5" />
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                        <button 
+                          onClick={() => updateQuantity(key, -1)}
+                          className="p-1.5 hover:bg-gray-200 text-gray-600 transition"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="px-3 text-xs font-bold">{item.quantity}</span>
+                        <button 
+                          onClick={() => updateQuantity(key, 1)}
+                          className="p-1.5 hover:bg-gray-200 text-gray-600 transition"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <span className="font-bold text-sm text-[#334c5c] w-24 text-right">
+                        ${(item.price * item.quantity).toLocaleString('es-CO')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div>
-                <h3 className="text-xl font-bold font-display text-slate-800">
-                  Tu Pedido Cachorro Feliz
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Completa tus datos para enviarle el pedido directo al Chef Javier por WhatsApp
-                </p>
+
+              {/* Formulario de Despacho */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    Tu Nombre Completo *
+                  </label>
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Ej. Paula Gómez"
+                    className="w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#334c5c]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    Nombre de tu Peludo 🐶🐱 *
+                  </label>
+                  <input
+                    type="text"
+                    value={petName}
+                    onChange={(e) => setPetName(e.target.value)}
+                    placeholder="Ej. Toby / Luna"
+                    className="w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#334c5c]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    Zona de Despacho en Bogotá / Colombia
+                  </label>
+                  <select
+                    value={deliveryZone}
+                    onChange={(e) => setDeliveryZone(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#334c5c] bg-white"
+                  >
+                    <option value="Norte de Bogotá ($8.000)">Norte de Bogotá ($8.000)</option>
+                    <option value="Chapinero / Teusaquillo ($7.000)">Chapinero / Teusaquillo ($7.000)</option>
+                    <option value="Occidente / Normandía ($6.000)">Occidente / Normandía ($6.000)</option>
+                    <option value="Centro / Sur de Bogotá ($9.000)">Centro / Sur de Bogotá ($9.000)</option>
+                    <option value="Recoger en Taller (Normandía - Gratis)">Recoger en Taller (Normandía - Gratis)</option>
+                    <option value="Envío Nacional por Transportadora ($15.000)">Envío Nacional por Transportadora ($15.000)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    Dirección de Entrega
+                  </label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Ej. Calle 140 # 15-30 Apto 402"
+                    className="w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#334c5c]"
+                  />
+                </div>
+              </div>
+
+              {/* Total y Botón de WhatsApp */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-200">
+                <div>
+                  <span className="text-xs text-gray-500 uppercase font-bold">Subtotal de Productos:</span>
+                  <div className="text-3xl font-black text-[#334c5c]">
+                    ${totalCart.toLocaleString('es-CO')} <span className="text-xs font-normal text-gray-500">COP</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={sendWhatsAppOrder}
+                  className="w-full sm:w-auto flex items-center justify-center gap-3 bg-[#25d366] hover:bg-[#20ba59] text-white font-black text-base px-8 py-3.5 rounded-2xl shadow-lg transition-all transform active:scale-95"
+                >
+                  <MessageCircle className="w-5 h-5 fill-white" /> Enviar Pedido a WhatsApp (+57 320 571 4504)
+                </button>
               </div>
             </div>
+          )}
+        </section>
+      </main>
 
-            {cart.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 space-y-3">
-                <Dog className="w-12 h-12 mx-auto text-slate-300" />
-                <p className="text-sm font-semibold">Tu carrito está vacío.</p>
-                <button
-                  onClick={() => setIsCartOpen(false)}
-                  className="bg-[#2D463E] text-white px-4 py-2 rounded-xl text-xs font-bold"
-                >
-                  Ver Catálogo de Snacks
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSendWhatsAppOrder} className="space-y-4">
-                {/* Cart Items List */}
-                <div className="bg-[#FAF8F5] p-3 rounded-xl border border-[#E0D7C6] max-h-48 overflow-y-auto divide-y divide-slate-200">
-                  {cart.map(item => (
-                    <div key={item.product.id} className="py-2 flex items-center justify-between text-xs">
-                      <div>
-                        <div className="font-bold text-slate-800">{item.product.name}</div>
-                        <div className="text-[11px] text-slate-500">
-                          {item.product.packageSizeGrams}g • ${item.product.salePrice.toLocaleString('es-CO')} c/u
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.product.id, -1)}
-                          className="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 flex items-center justify-center font-bold"
-                        >
-                          -
-                        </button>
-                        <span className="font-bold text-slate-900 w-4 text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.product.id, 1)}
-                          className="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 flex items-center justify-center font-bold"
-                        >
-                          +
-                        </button>
-                        <span className="font-bold text-slate-900 w-16 text-right">
-                          ${(item.product.salePrice * item.quantity).toLocaleString('es-CO')}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(item.product.id)}
-                          className="text-red-400 hover:text-red-600 p-1"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Client Information */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Tu Nombre Completo *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ej: Carolina Gómez"
-                      value={clientName}
-                      onChange={e => setClientName(e.target.value)}
-                      className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#EF8828] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Tu Teléfono / WhatsApp *</label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="Ej: 3101234567"
-                      value={clientPhone}
-                      onChange={e => setClientPhone(e.target.value)}
-                      className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#EF8828] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Pet Information (Birthday CRM!) */}
-                <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-amber-900 mb-1 flex items-center space-x-1">
-                      <Dog className="w-3.5 h-3.5 text-[#EF8828]" />
-                      <span>Nombre de tu Mascota</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Toby / Luna"
-                      value={petName}
-                      onChange={e => setPetName(e.target.value)}
-                      className="w-full text-xs p-2 bg-white border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EF8828]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-amber-900 mb-1 flex items-center space-x-1">
-                      <Calendar className="w-3.5 h-3.5 text-[#EF8828]" />
-                      <span>Cumpleaños (¡Para su regalo!)</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={petBirthday}
-                      onChange={e => setPetBirthday(e.target.value)}
-                      className="w-full text-xs p-2 bg-white border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EF8828]"
-                    />
-                  </div>
-                </div>
-
-                {/* Delivery Address & Zone */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Dirección de Entrega *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ej: Calle 127 # 19-45 Apt 501"
-                      value={clientAddress}
-                      onChange={e => setClientAddress(e.target.value)}
-                      className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#EF8828] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Zona / Ciudad *</label>
-                    <select
-                      value={clientZone}
-                      onChange={e => setClientZone(e.target.value)}
-                      className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#EF8828] bg-white"
-                    >
-                      <option value="Bogotá (Zona Norte / Cedritos / Usaquén)">Bogotá (Zona Norte / Cedritos / Usaquén)</option>
-                      <option value="Bogotá (Zona Centro / Chapinero / Teusaquillo)">Bogotá (Zona Centro / Chapinero / Teusaquillo)</option>
-                      <option value="Bogotá (Zona Noroccidente / Suba / Colina)">Bogotá (Zona Noroccidente / Suba / Colina)</option>
-                      <option value="Bogotá (Zona Occidente / Fontibón / Salitre / Engativá)">Bogotá (Zona Occidente / Fontibón / Salitre / Engativá)</option>
-                      <option value="Bogotá (Zona Sur)">Bogotá (Zona Sur)</option>
-                      <option value="Fuera de Bogotá (Alrededores y Municipios)">Fuera de Bogotá (Alrededores y Municipios)</option>
-                      <option value="Nacional (Otras Ciudades de Colombia)">Nacional (Otras Ciudades de Colombia)</option>
-                      <option value="Recogida en Taller">Recogida personal en el taller del Chef (Gratis)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Payment Method Preferences */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center space-x-1">
-                    <CreditCard className="w-3.5 h-3.5 text-[#EF8828]" />
-                    <span>¿Cómo prefieres realizar el pago?</span>
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {(['Daviplata', 'Nequi', 'Bancolombia', 'Contraentrega'] as const).map(method => (
-                      <button
-                        type="button"
-                        key={method}
-                        onClick={() => setPaymentMethod(method)}
-                        className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
-                          paymentMethod === method
-                            ? 'bg-[#2D463E] text-white border-[#2D463E] shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        {method === 'Daviplata' && '🔴 Daviplata'}
-                        {method === 'Nequi' && '🟣 Nequi'}
-                        {method === 'Bancolombia' && '🟡 Bancolombia'}
-                        {method === 'Contraentrega' && '💵 Contraentrega'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Totals Breakdown */}
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex justify-between items-center text-xs">
-                  <div>
-                    <span className="text-slate-600 font-semibold">Subtotal:</span> ${subtotal.toLocaleString('es-CO')}
-                    <span className="mx-2">|</span>
-                    <span className="text-slate-600 font-semibold">Envío:</span> {shippingCost === 0 ? '¡GRATIS!' : `$${shippingCost.toLocaleString('es-CO')}`}
-                  </div>
-                  <div className="text-base font-extrabold text-[#2D463E]">
-                    TOTAL: ${total.toLocaleString('es-CO')} COP
-                  </div>
-                </div>
-
-                {/* Big WhatsApp Action Button */}
-                <button
-                  type="submit"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 shadow-lg cursor-pointer transition-all active:scale-98"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>Enviar Pedido a WhatsApp del Chef (3205714504)</span>
-                </button>
-
-                <p className="text-[11px] text-center text-slate-400">
-                  Al hacer clic se abrirá tu WhatsApp con el detalle listo para enviar sin complicaciones.
-                </p>
-              </form>
-            )}
-          </div>
+      {/* Footer Artesanal con Acceso Sigiloso para el Chef */}
+      <footer className="mt-16 border-t border-gray-200 bg-white py-8 text-center text-xs text-gray-500 space-y-2">
+        <p className="font-medium">
+          🐾 <strong>Cachorro Feliz</strong> • Obrador & Taller Gastronómico Canino
+        </p>
+        <p>Bogotá, Colombia • Hecho a mano con amor por el Chef Javier & Oreo</p>
+        <div className="pt-2">
+          <a 
+            href="#admin" 
+            className="text-gray-400 hover:text-[#334c5c] text-[11px] underline transition"
+          >
+            Acceso Taller del Chef
+          </a>
         </div>
-      )}
+      </footer>
     </div>
   );
 };
-
+export default PublicStoreView;
