@@ -19,6 +19,7 @@ import {
 import PublicStoreView from './components/PublicStoreView';
 import ProductionView from './components/ProductionView';
 import DeliveryRoutePlannerView from './components/DeliveryRoutePlannerView';
+import ClientsPetsView from './components/ClientsPetsView';
 
 export const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
