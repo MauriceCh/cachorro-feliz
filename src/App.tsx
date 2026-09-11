@@ -13,13 +13,15 @@ import {
   Printer, 
   Menu,
   X,
-  Compass
+  Compass,
+  Boxes
 } from 'lucide-react';
 
 import PublicStoreView from './components/PublicStoreView';
 import ProductionView from './components/ProductionView';
 import DeliveryRoutePlannerView from './components/DeliveryRoutePlannerView';
 import ClientsPetsView from './components/ClientsPetsView';
+import InventoryPurchasesView from './components/InventoryPurchasesView';
 
 export const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -27,7 +29,7 @@ export const App: React.FC = () => {
   const [pinError, setPinError] = useState<string>('');
   const [showPinModal, setShowPinModal] = useState<boolean>(false);
   
-  // Estado del módulo activo: 'dashboard' | 'produccion' | 'rutas' | 'crm'
+  // Estado del módulo activo: 'dashboard' | 'inventario' | 'produccion' | 'rutas' | 'crm'
   const [currentModule, setCurrentModule] = useState<string>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
@@ -171,6 +173,7 @@ export const App: React.FC = () => {
   // 2. PANEL ADMINISTRATIVO DEL CHEF JAVIER
   const menuItems = [
     { id: 'dashboard', label: 'Resumen Taller', icon: ChefHat },
+    { id: 'inventario', label: 'Insumos & Proveedores', icon: Boxes },
     { id: 'produccion', label: 'Producción & Mermas', icon: Package },
     { id: 'rutas', label: 'Rutas & Despachos', icon: MapPin },
     { id: 'crm', label: 'CRM Canino', icon: Users },
@@ -182,7 +185,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f3f0] flex flex-col font-sans">
-      {/* Barra de navegación superior */}
+      {/* Barra superior */}
       <header className="bg-[#334c5c] text-white px-4 sm:px-6 py-3 shadow-md flex items-center justify-between border-b-2 border-[#f8b46b] sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <button 
@@ -232,7 +235,7 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Pestañas de Acceso Rápido Directo (Tabs superiores) */}
+      {/* Tabs superiores */}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-8 py-2 overflow-x-auto flex items-center gap-2 scrollbar-none">
         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mr-2 hidden sm:inline">
           Navegación:
@@ -258,7 +261,7 @@ export const App: React.FC = () => {
         })}
       </div>
 
-      {/* Estructura Principal */}
+      {/* Contenedor Principal */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Desktop */}
         <aside className="hidden md:flex flex-col w-64 bg-[#2b404e] text-white p-4 space-y-1.5 border-r border-[#334c5c]/40">
@@ -335,28 +338,35 @@ export const App: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-4 sm:p-8">
           <div className="max-w-6xl mx-auto space-y-6">
 
-            {/* VISTA 1: PRODUCCIÓN Y MERMAS */}
+            {/* VISTA: MATERIAS PRIMAS & PROVEEDORES */}
+            {currentModule === 'inventario' && (
+              <div className="space-y-4">
+                <InventoryPurchasesView />
+              </div>
+            )}
+
+            {/* VISTA: PRODUCCIÓN Y MERMAS */}
             {currentModule === 'produccion' && (
               <div className="space-y-4">
                 <ProductionView />
               </div>
             )}
 
-            {/* VISTA 2: RUTAS Y DESPACHOS BOGOTÁ */}
+            {/* VISTA: RUTAS Y DESPACHOS BOGOTÁ */}
             {currentModule === 'rutas' && (
               <div className="space-y-4">
                 <DeliveryRoutePlannerView />
               </div>
             )}
 
-            {/* VISTA 3: CRM CANINO & CUMPLEAÑOS DE MASCOTAS */}
+            {/* VISTA: CRM CANINO */}
             {currentModule === 'crm' && (
               <div className="space-y-4">
                 <ClientsPetsView />
               </div>
             )}
 
-            {/* VISTA 0: DASHBOARD / RESUMEN */}
+            {/* VISTA: DASHBOARD / RESUMEN */}
             {currentModule === 'dashboard' && (
               <>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -368,24 +378,24 @@ export const App: React.FC = () => {
                       Resumen General del Taller
                     </h2>
                     <p className="text-xs text-gray-500">
-                      Gestiona mermas de recetas, rutas de despacho Bogotá y fidelización de clientes.
+                      Inventario de materias primas con alertas, recetas, rutas de despacho y CRM.
                     </p>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
                     <button 
                       type="button"
-                      onClick={() => setCurrentModule('crm')}
-                      className="text-xs font-black bg-[#f8b46b] text-[#334c5c] hover:bg-[#e29d53] px-3.5 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5"
+                      onClick={() => setCurrentModule('inventario')}
+                      className="text-xs font-black bg-[#ff7043] text-white hover:bg-[#f4511e] px-3.5 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5"
                     >
-                      <Users className="w-3.5 h-3.5" /> Ver CRM Mascotas
+                      <Boxes className="w-3.5 h-3.5" /> Ver Insumos & Alertas
                     </button>
                     <button 
                       type="button"
-                      onClick={() => setCurrentModule('rutas')}
+                      onClick={() => setCurrentModule('produccion')}
                       className="text-xs font-bold bg-[#334c5c] text-[#f8b46b] hover:bg-[#273a46] px-3.5 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5"
                     >
-                      <MapPin className="w-3.5 h-3.5" /> Rutas Bogotá
+                      <Package className="w-3.5 h-3.5" /> Producción & Mermas
                     </button>
                   </div>
                 </div>
@@ -397,13 +407,13 @@ export const App: React.FC = () => {
                     <span className="text-[11px] text-green-600 font-bold block mt-1">✓ Listos para despacho</span>
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
-                    <span className="text-xs font-bold text-gray-400 block uppercase">Producción Galletas</span>
-                    <span className="text-2xl font-black text-[#f8b46b]">4.8 kg horneados</span>
-                    <span className="text-[11px] text-gray-500 block mt-1">Lote #2024-BOG-04</span>
+                    <span className="text-xs font-bold text-gray-400 block uppercase">Insumos Críticos</span>
+                    <span className="text-2xl font-black text-[#ff7043]">3 en alerta</span>
+                    <span className="text-[11px] text-red-600 font-bold block mt-1">Requiere pedido hoy</span>
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
                     <span className="text-xs font-bold text-gray-400 block uppercase">Deshidratados Res/Pollo</span>
-                    <span className="text-2xl font-black text-[#ff7043]">6.2 kg en ciclo</span>
+                    <span className="text-2xl font-black text-[#334c5c]">6.2 kg en ciclo</span>
                     <span className="text-[11px] text-gray-500 block mt-1">Merma estimada: ~65%</span>
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
@@ -423,27 +433,14 @@ export const App: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                       type="button"
-                      onClick={() => setCurrentModule('crm')}
+                      onClick={() => setCurrentModule('inventario')}
                       className="p-4 rounded-xl border border-gray-200 hover:border-[#334c5c] text-left hover:bg-gray-50 transition"
                     >
                       <h4 className="font-bold text-sm text-[#334c5c] flex items-center gap-2">
-                        <Users className="w-4 h-4 text-[#f8b46b]" /> 1. CRM & Cumpleaños
+                        <Boxes className="w-4 h-4 text-[#ff7043]" /> 1. Insumos & Proveedores
                       </h4>
                       <p className="text-xs text-gray-500 mt-1">
-                        Ver tutores, alergias y saludar a los peludos cumpleañeros por WhatsApp.
-                      </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setCurrentModule('rutas')}
-                      className="p-4 rounded-xl border border-gray-200 hover:border-[#334c5c] text-left hover:bg-gray-50 transition"
-                    >
-                      <h4 className="font-bold text-sm text-[#334c5c] flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-[#ff7043]" /> 2. Rutas & Despachos
-                      </h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Enrutamiento por zonas y apertura directa de la ruta en Google Maps.
+                        Control de stock mínimo, alarmas y contacto por WhatsApp/Web/Tienda.
                       </p>
                     </button>
 
@@ -453,10 +450,23 @@ export const App: React.FC = () => {
                       className="p-4 rounded-xl border border-gray-200 hover:border-[#334c5c] text-left hover:bg-gray-50 transition"
                     >
                       <h4 className="font-bold text-sm text-[#334c5c] flex items-center gap-2">
-                        <Package className="w-4 h-4 text-[#7cb342]" /> 3. Registro de Lotes
+                        <Package className="w-4 h-4 text-[#f8b46b]" /> 2. Producción & Mermas
                       </h4>
                       <p className="text-xs text-gray-500 mt-1">
-                        Cálculo de mermas de deshidratado y balance de materias primas.
+                        Control de hornos, pesaje crudo vs. terminado y costos de lotes.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentModule('rutas')}
+                      className="p-4 rounded-xl border border-gray-200 hover:border-[#334c5c] text-left hover:bg-gray-50 transition"
+                    >
+                      <h4 className="font-bold text-sm text-[#334c5c] flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-[#7cb342]" /> 3. Rutas & Despachos
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Rutas optimizadas desde Normandía en Google Maps y apps de entrega.
                       </p>
                     </button>
                   </div>
@@ -466,6 +476,7 @@ export const App: React.FC = () => {
 
             {/* Módulos en preparación */}
             {currentModule !== 'dashboard' && 
+             currentModule !== 'inventario' && 
              currentModule !== 'produccion' && 
              currentModule !== 'rutas' && 
              currentModule !== 'crm' && (
@@ -474,7 +485,7 @@ export const App: React.FC = () => {
                   Módulo en preparación
                 </h3>
                 <p className="text-xs text-gray-500">
-                  Usa las pestañas superiores para alternar entre <strong>"Producción & Mermas"</strong>, <strong>"Rutas & Despachos"</strong> y <strong>"CRM Canino"</strong>.
+                  Usa las pestañas superiores para alternar entre <strong>"Insumos & Proveedores"</strong>, <strong>"Producción & Mermas"</strong>, <strong>"Rutas & Despachos"</strong> y <strong>"CRM Canino"</strong>.
                 </p>
               </div>
             )}
