@@ -7,284 +7,683 @@ import {
   MessageCircle, 
   Search, 
   Plus, 
-  CheckCircle2, 
+  Trash2, 
+  MapPin, 
   AlertCircle,
-  Calendar,
-  Sparkles
+  X,
+  CheckCircle2,
+  Calendar
 } from 'lucide-react';
 
-interface PetProfile {
+export interface Pet {
   id: string;
-  petName: string;
-  petBreed: string;
-  petAge: string;
-  petBirthday: string; // MM-DD
+  name: string;
+  breed: string;
+  age: string;
+  birthday: string; // Formato MM-DD
   allergies: string;
   favoriteProtein: 'Galletas' | 'Res' | 'Pollo' | 'Cerdo';
+}
+
+export interface ClientProfile {
+  id: string;
   ownerName: string;
   ownerPhone: string;
+  address: string;
   zone: string;
   totalOrders: number;
   totalSpentCOP: number;
   lastOrderDate: string;
+  pets: Pet[];
 }
 
-const INITIAL_PETS: PetProfile[] = [
+const INITIAL_CLIENTS: ClientProfile[] = [
   {
-    id: 'p-1',
-    petName: 'Bruno',
-    petBreed: 'Golden Retriever',
-    petAge: '3 años',
-    petBirthday: '10-28', // Cumpleaños en octubre (cercano)
-    allergies: 'Sensible al trigo / Ninguna proteína',
-    favoriteProtein: 'Res',
+    id: 'cli-1',
     ownerName: 'Carolina Mendoza',
     ownerPhone: '+57 312 458 9012',
+    address: 'Calle 67 # 9-24 Apto 302',
     zone: 'Chapinero',
     totalOrders: 6,
     totalSpentCOP: 420000,
-    lastOrderDate: '2024-10-20'
+    lastOrderDate: '2024-10-20',
+    pets: [
+      {
+        id: 'pet-1',
+        name: 'Bruno',
+        breed: 'Golden Retriever',
+        age: '3 años',
+        birthday: '10-28', // Cumpleaños en octubre
+        allergies: 'Sensible al trigo',
+        favoriteProtein: 'Res'
+      },
+      {
+        id: 'pet-2',
+        name: 'Luna',
+        breed: 'Criolla rescatada',
+        age: '1 año',
+        birthday: '11-15',
+        allergies: 'Ninguna',
+        favoriteProtein: 'Galletas'
+      }
+    ]
   },
   {
-    id: 'p-2',
-    petName: 'Kira',
-    petBreed: 'Beagle',
-    petAge: '2 años',
-    petBirthday: '11-14',
-    allergies: 'Ninguna conocida',
-    favoriteProtein: 'Pollo',
+    id: 'cli-2',
     ownerName: 'Alejandro Restrepo',
     ownerPhone: '+57 320 891 4455',
+    address: 'Cra 15 # 134-18 Int 2',
     zone: 'Norte (Usaquén)',
     totalOrders: 4,
     totalSpentCOP: 260000,
-    lastOrderDate: '2024-10-22'
+    lastOrderDate: '2024-10-22',
+    pets: [
+      {
+        id: 'pet-3',
+        name: 'Kira',
+        breed: 'Beagle',
+        age: '2 años',
+        birthday: '10-31', // Cumpleaños este mes
+        allergies: 'Ninguna conocida',
+        favoriteProtein: 'Pollo'
+      }
+    ]
   },
   {
-    id: 'p-3',
-    petName: 'Simba',
-    petBreed: 'Criollo rescatado',
-    petAge: '4 años',
-    petBirthday: '10-30', // Cumpleaños este mes
-    allergies: 'Intolerancia a colorantes y conservantes',
-    favoriteProtein: 'Galletas',
+    id: 'cli-3',
     ownerName: 'Valeria Gómez',
     ownerPhone: '+57 310 776 2200',
+    address: 'Calle 53 # 71D-15 Casa 4',
     zone: 'Normandía / Engativá',
     totalOrders: 8,
     totalSpentCOP: 510000,
-    lastOrderDate: '2024-10-24'
-  },
-  {
-    id: 'p-4',
-    petName: 'Max',
-    petBreed: 'Bulldog Francés',
-    petAge: '1 año',
-    petBirthday: '12-05',
-    allergies: 'Piel delicada, dieta 100% natural',
-    favoriteProtein: 'Cerdo',
-    ownerName: 'Felipe Duarte',
-    ownerPhone: '+57 315 620 9911',
-    zone: 'Chapinero Alto',
-    totalOrders: 3,
-    totalSpentCOP: 285000,
-    lastOrderDate: '2024-10-18'
+    lastOrderDate: '2024-10-24',
+    pets: [
+      {
+        id: 'pet-4',
+        name: 'Simba',
+        breed: 'Criollo mestizo',
+        age: '4 años',
+        birthday: '10-30', // Cumpleaños este mes
+        allergies: 'Intolerancia a conservantes químicos',
+        favoriteProtein: 'Galletas'
+      }
+    ]
   }
 ];
 
 export const ClientsPetsView: React.FC = () => {
-  const [pets, setPets] = useState<PetProfile[]>(INITIAL_PETS);
+  const [clients, setClients] = useState<ClientProfile[]>(INITIAL_CLIENTS);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterProtein, setFilterProtein] = useState<string>('Todas');
+  
+  // Estado para modal de Nuevo Cliente
+  const [showNewClientModal, setShowNewClientModal] = useState(false);
+  const [newOwnerName, setNewOwnerName] = useState('');
+  const [newOwnerPhone, setNewOwnerPhone] = useState('');
+  const [newAddress, setNewAddress] = useState('');
+  const [newZone, setNewZone] = useState('Normandía / Engativá');
+  
+  // Datos de la mascota en el nuevo cliente
+  const [newPetName, setNewPetName] = useState('');
+  const [newPetBreed, setNewPetBreed] = useState('');
+  const [newPetAge, setNewPetAge] = useState('');
+  const [newPetBirthday, setNewPetBirthday] = useState('10-15');
+  const [newPetAllergies, setNewPetAllergies] = useState('Ninguna');
+  const [newPetProtein, setNewPetProtein] = useState<'Galletas' | 'Res' | 'Pollo' | 'Cerdo'>('Galletas');
 
-  // Filtrar cumpleaños de este mes (Octubre = mes 10)
-  const currentMonth = '10';
-  const birthdayPets = pets.filter(p => p.petBirthday.startsWith(currentMonth));
+  // Estado para modal de Agregar Mascota a cliente existente
+  const [targetClientIdForPet, setTargetClientIdForPet] = useState<string | null>(null);
 
-  const filteredPets = pets.filter(pet => {
-    const matchesSearch = 
-      pet.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pet.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pet.petBreed.toLowerCase().includes(searchTerm.toLowerCase());
+  const currentMonth = '10'; // Octubre
 
-    const matchesProtein = 
-      filterProtein === 'Todas' || pet.favoriteProtein === filterProtein;
+  // Calcular peludos cumpleañeros
+  const allPetsWithOwners = clients.flatMap(c => 
+    c.pets.map(p => ({ ...p, ownerName: c.ownerName, ownerPhone: c.ownerPhone }))
+  );
+  const birthdayPets = allPetsWithOwners.filter(p => p.birthday.startsWith(currentMonth));
 
-    return matchesSearch && matchesProtein;
+  // Filtro de búsqueda por cliente o por mascota
+  const filteredClients = clients.filter(client => {
+    const term = searchTerm.toLowerCase();
+    const matchClient = 
+      client.ownerName.toLowerCase().includes(term) ||
+      client.ownerPhone.includes(term) ||
+      client.address.toLowerCase().includes(term);
+    
+    const matchPet = client.pets.some(p => 
+      p.name.toLowerCase().includes(term) || 
+      p.breed.toLowerCase().includes(term)
+    );
+
+    return matchClient || matchPet;
   });
 
-  const sendBirthdayWhatsApp = (pet: PetProfile) => {
-    const message = `¡Hola ${pet.ownerName}! 🐾🎂 Te saluda el Chef Javier y Oreo de Cachorro Feliz.\n` +
-      `Nos dimos cuenta de que muy pronto es el cumpleaños de ${pet.petName} 🐶🎈.\n` +
-      `¡Queremos consentirlo como se merece! Tienes un 15% de descuento y una porción de galletas artesanales de obsequio en su próximo pedido del taller.\n` +
-      `¿Deseas que te apartemos su proteína favorita (${pet.favoriteProtein})?`;
+  // 1. CREAR NUEVO CLIENTE
+  const handleCreateClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOwnerName.trim() || !newOwnerPhone.trim()) return;
 
-    const phoneClean = pet.ownerPhone.replace(/\D/g, '');
-    const url = `https://api.whatsapp.com/send?phone=${phoneClean}&text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    const newClient: ClientProfile = {
+      id: `cli-${Date.now()}`,
+      ownerName: newOwnerName,
+      ownerPhone: newOwnerPhone,
+      address: newAddress || 'Dirección por confirmar',
+      zone: newZone,
+      totalOrders: 1,
+      totalSpentCOP: 0,
+      lastOrderDate: new Date().toISOString().split('T')[0],
+      pets: newPetName.trim() ? [
+        {
+          id: `pet-${Date.now()}`,
+          name: newPetName,
+          breed: newPetBreed || 'Criollo / Mestizo',
+          age: newPetAge || 'Adulto',
+          birthday: newPetBirthday,
+          allergies: newPetAllergies,
+          favoriteProtein: newPetProtein
+        }
+      ] : []
+    };
+
+    setClients([newClient, ...clients]);
+    setShowNewClientModal(false);
+    // Limpiar formulario
+    setNewOwnerName('');
+    setNewOwnerPhone('');
+    setNewAddress('');
+    setNewPetName('');
+    setNewPetBreed('');
+  };
+
+  // 2. AGREGAR OTRA MASCOTA A CLIENTE EXISTENTE
+  const handleAddPetToClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetClientIdForPet || !newPetName.trim()) return;
+
+    const newPet: Pet = {
+      id: `pet-${Date.now()}`,
+      name: newPetName,
+      breed: newPetBreed || 'Mestizo',
+      age: newPetAge || '2 años',
+      birthday: newPetBirthday,
+      allergies: newPetAllergies,
+      favoriteProtein: newPetProtein
+    };
+
+    setClients(clients.map(c => {
+      if (c.id === targetClientIdForPet) {
+        return { ...c, pets: [...c.pets, newPet] };
+      }
+      return c;
+    }));
+
+    setTargetClientIdForPet(null);
+    setNewPetName('');
+    setNewPetBreed('');
+  };
+
+  // 3. ELIMINAR CLIENTE
+  const handleDeleteClient = (clientId: string, clientName: string) => {
+    if (window.confirm(`¿Estás seguro de eliminar a ${clientName} y todas sus mascotas del CRM?`)) {
+      setClients(clients.filter(c => c.id !== clientId));
+    }
+  };
+
+  // 4. ELIMINAR UNA MASCOTA ESPECÍFICA
+  const handleDeletePet = (clientId: string, petId: string, petName: string) => {
+    if (window.confirm(`¿Deseas eliminar a ${petName} de este tutor?`)) {
+      setClients(clients.map(c => {
+        if (c.id === clientId) {
+          return { ...c, pets: c.pets.filter(p => p.id !== petId) };
+        }
+        return c;
+      }));
+    }
+  };
+
+  // Enviar mensaje de cumpleaños por WhatsApp
+  const sendWhatsAppBirthday = (petName: string, ownerName: string, phone: string, protein: string) => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    const message = `¡Hola ${ownerName}! 🐾🎂 Te saluda el Chef Javier y Oreo de Cachorro Feliz.\n` +
+      `Nos dimos cuenta de que muy pronto es el cumpleaños de ${petName} 🐶🎈.\n` +
+      `¡Queremos consentirlo como se merece! Tienes un 15% de descuento y una porción de galletas de obsequio en su próximo pedido del taller.\n` +
+      `¿Deseas que le reservemos su snack favorito (${protein})?`;
+
+    window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`, '_blank');
   };
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Encabezado */}
+      {/* Encabezado con Botón de Nuevo Cliente */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#f8b46b] bg-[#334c5c] px-3 py-1 rounded-full inline-flex items-center gap-1.5 mb-2">
             <Users className="w-3.5 h-3.5" /> CRM Canino & Directorio de Clientes
           </span>
           <h2 className="text-2xl font-black text-[#334c5c]">
-            Ficha de Mascotas & Tutores Fieles
+            Directorio de Tutores & Fichas de Mascotas
           </h2>
           <p className="text-xs text-gray-500">
-            Control de requerimientos nutricionales, historial de compras y fidelización por WhatsApp.
+            Manejo multi-mascota por cliente, datos de contacto completos y alertas de cumpleaños.
           </p>
         </div>
 
-        <div className="bg-[#fbf9f6] p-4 rounded-xl border border-gray-200 flex items-center gap-4">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-gray-400 block">Total Peludos Registrados</span>
-            <span className="text-2xl font-black text-[#334c5c]">{pets.length} Mascotas</span>
-          </div>
-          <div className="border-l pl-4">
-            <span className="text-[10px] uppercase font-bold text-[#ff7043] block">Cumpleaños este Mes</span>
-            <span className="text-2xl font-black text-[#ff7043]">{birthdayPets.length} 🎂</span>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowNewClientModal(true)}
+          className="flex items-center gap-2 bg-[#f8b46b] hover:bg-[#e29d53] text-[#334c5c] font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition cursor-pointer active:scale-95"
+        >
+          <Plus className="w-4 h-4 stroke-[3]" /> + Nuevo Cliente / Tutor
+        </button>
       </div>
 
-      {/* Banner de Alerta de Cumpleaños del Mes */}
+      {/* Banner de Cumpleaños */}
       {birthdayPets.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-[#f8b46b] p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-[#f8b46b] p-4 sm:p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#f8b46b] text-[#334c5c] flex items-center justify-center flex-shrink-0 text-xl font-bold shadow-md">
+            <div className="w-10 h-10 rounded-full bg-[#f8b46b] text-[#334c5c] flex items-center justify-center font-bold text-lg shadow-sm">
               🎂
             </div>
             <div>
               <h3 className="text-sm font-black text-[#334c5c]">
-                ¡Hay {birthdayPets.length} peludos celebrando cumpleaños este mes!
+                ¡Hay {birthdayPets.length} mascotas celebrando su cumpleaños este mes!
               </h3>
               <p className="text-xs text-gray-600">
-                {birthdayPets.map(p => `${p.petName} (${p.ownerName})`).join(', ')}. Envíales una felicitación con obsequio del taller.
+                {birthdayPets.map(p => `${p.name} (Tutor: ${p.ownerName})`).join(' • ')}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Barra de Búsqueda y Filtros */}
+      {/* Barra de Búsqueda */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full sm:w-80">
+        <div className="relative w-full sm:w-96">
           <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Buscar por mascota, tutor o raza..."
+            placeholder="Buscar por cliente, teléfono, dirección o mascota..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-xs font-medium focus:ring-2 focus:ring-[#334c5c] focus:outline-none bg-white shadow-sm"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs font-medium focus:ring-2 focus:ring-[#334c5c] focus:outline-none bg-white shadow-sm"
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          {['Todas', 'Res', 'Pollo', 'Cerdo', 'Galletas'].map((prot) => (
-            <button
-              key={prot}
-              type="button"
-              onClick={() => setFilterProtein(prot)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
-                filterProtein === prot
-                  ? 'bg-[#334c5c] text-[#f8b46b] border border-[#f8b46b]'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              {prot}
-            </button>
-          ))}
-        </div>
+        <span className="text-xs font-bold text-gray-500">
+          Mostrando {filteredClients.length} tutores registrados
+        </span>
       </div>
 
-      {/* Grid de Fichas de Mascotas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredPets.map((pet) => {
-          const isBirthday = pet.petBirthday.startsWith(currentMonth);
-          return (
-            <div
-              key={pet.id}
-              className={`bg-white p-5 rounded-2xl shadow-sm border transition flex flex-col justify-between space-y-4 ${
-                isBirthday ? 'border-2 border-[#f8b46b]' : 'border-gray-200 hover:border-[#334c5c]'
-              }`}
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[#334c5c] text-[#f8b46b] flex items-center justify-center font-black text-lg shadow-sm">
-                      🐶
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-black text-lg text-[#334c5c]">{pet.petName}</h4>
-                        {isBirthday && (
-                          <span className="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <Cake className="w-3 h-3" /> ¡Cumpleaños!
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 font-medium">{pet.petBreed} • {pet.petAge}</p>
-                    </div>
-                  </div>
-
-                  <span className="text-xs font-bold bg-[#f5f3f0] text-[#334c5c] px-2.5 py-1 rounded-lg">
-                    {pet.favoriteProtein}
-                  </span>
-                </div>
-
-                {/* Info Tutor */}
-                <div className="bg-[#fbf9f6] p-3 rounded-xl border border-gray-100 space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Tutor:</span>
-                    <span className="font-bold text-gray-800">{pet.ownerName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Zona Bogotá:</span>
-                    <span className="font-medium text-gray-700">{pet.zone}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Sensibilidad/Alergias:</span>
-                    <span className="font-semibold text-[#ff7043]">{pet.allergies}</span>
+      {/* Lista de Tarjetas de Clientes (Soporta múltiples mascotas) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {filteredClients.map((client) => (
+          <div
+            key={client.id}
+            className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 hover:border-[#334c5c] transition flex flex-col justify-between space-y-4"
+          >
+            {/* Header del Tutor */}
+            <div className="space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-black text-[#334c5c] flex items-center gap-2">
+                    {client.ownerName}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600 mt-1">
+                    <span className="flex items-center gap-1 font-bold text-gray-800">
+                      <Phone className="w-3.5 h-3.5 text-[#334c5c]" /> {client.ownerPhone}
+                    </span>
+                    <span className="flex items-center gap-1 font-medium text-gray-500">
+                      <MapPin className="w-3.5 h-3.5 text-[#ff7043]" /> {client.address} ({client.zone})
+                    </span>
                   </div>
                 </div>
 
-                {/* Métricas Cliente */}
-                <div className="grid grid-cols-2 gap-2 text-xs text-center">
-                  <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                    <span className="text-[10px] text-gray-400 block uppercase font-bold">Pedidos Taller</span>
-                    <span className="font-black text-[#334c5c]">{pet.totalOrders} pedidos</span>
-                  </div>
-                  <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                    <span className="text-[10px] text-gray-400 block uppercase font-bold">Histórico Consumido</span>
-                    <span className="font-black text-green-700">${pet.totalSpentCOP.toLocaleString('es-CO')}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botón WhatsApp */}
-              <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-[10px] text-gray-400">
-                  Última compra: {pet.lastOrderDate}
-                </span>
-
+                {/* Botón Eliminar Cliente */}
                 <button
                   type="button"
-                  onClick={() => sendBirthdayWhatsApp(pet)}
-                  className="flex items-center gap-1.5 bg-[#25d366] hover:bg-[#20ba59] text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm transition active:scale-95"
+                  onClick={() => handleDeleteClient(client.id, client.ownerName)}
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                  title="Eliminar cliente"
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  {isBirthday ? 'Saludar por Cumpleaños' : 'Contactar Tutor'}
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Sección de Mascotas del Tutor */}
+              <div className="border-t border-gray-100 pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-black uppercase text-gray-400 tracking-wider">
+                    🐾 Mascotas Registradas ({client.pets.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setTargetClientIdForPet(client.id)}
+                    className="text-[11px] font-extrabold text-[#334c5c] hover:text-[#f8b46b] flex items-center gap-1 transition"
+                  >
+                    <Plus className="w-3 h-3" /> Agregar Mascota
+                  </button>
+                </div>
+
+                {client.pets.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic py-2">
+                    No hay mascotas asignadas a este tutor.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {client.pets.map((pet) => {
+                      const isBirthday = pet.birthday.startsWith(currentMonth);
+                      return (
+                        <div
+                          key={pet.id}
+                          className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${
+                            isBirthday 
+                              ? 'bg-amber-50/70 border-[#f8b46b]' 
+                              : 'bg-[#fbf9f6] border-gray-100'
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-sm text-[#334c5c]">{pet.name}</span>
+                              <span className="text-[10px] font-bold text-gray-500 bg-white px-2 py-0.5 rounded border border-gray-200">
+                                {pet.breed} • {pet.age}
+                              </span>
+                              {isBirthday && (
+                                <span className="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Cake className="w-3 h-3" /> Cumpleaños
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-gray-600">
+                              Favorito: <strong className="text-[#334c5c]">{pet.favoriteProtein}</strong> | Alergias: <span className="text-[#ff7043]">{pet.allergies}</span>
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {isBirthday && (
+                              <button
+                                type="button"
+                                onClick={() => sendWhatsAppBirthday(pet.name, client.ownerName, client.ownerPhone, pet.favoriteProtein)}
+                                className="bg-[#25d366] hover:bg-[#20ba59] text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1 transition"
+                                title="Felicitar por WhatsApp"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" /> Felicitar
+                              </button>
+                            )}
+
+                            {/* Eliminar Mascota */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePet(client.id, pet.id, pet.name)}
+                              className="p-1 text-gray-300 hover:text-red-500 transition"
+                              title="Eliminar mascota"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          );
-        })}
+
+            {/* Footer de Métricas y Contacto */}
+            <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+              <div className="text-gray-500">
+                <span>{client.totalOrders} pedidos</span> • <strong className="text-green-700 font-bold">${client.totalSpentCOP.toLocaleString('es-CO')} COP</strong>
+              </div>
+
+              <a
+                href={`https://api.whatsapp.com/send?phone=${client.ownerPhone.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 bg-[#f5f3f0] hover:bg-gray-200 text-[#334c5c] font-bold px-3 py-1.5 rounded-xl transition"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-[#25d366]" /> Chat WhatsApp
+              </a>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* MODAL 1: CREAR NUEVO CLIENTE */}
+      {showNewClientModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border-2 border-[#334c5c] max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4 border-b pb-3">
+              <h3 className="text-lg font-black text-[#334c5c] flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#f8b46b]" /> Registrar Nuevo Tutor & Mascota
+              </h3>
+              <button type="button" onClick={() => setShowNewClientModal(false)}>
+                <X className="w-5 h-5 text-gray-400 hover:text-gray-700" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateClient} className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">
+                  1. Datos del Tutor
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Nombre Completo *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej: Laura Martínez"
+                      value={newOwnerName}
+                      onChange={(e) => setNewOwnerName(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">WhatsApp / Teléfono *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="+57 300 123 4567"
+                      value={newOwnerPhone}
+                      onChange={(e) => setNewOwnerPhone(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Dirección de Entrega</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Calle 140 # 11-20 Apto 401"
+                      value={newAddress}
+                      onChange={(e) => setNewAddress(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Zona Bogotá</label>
+                    <select
+                      value={newZone}
+                      onChange={(e) => setNewZone(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none bg-white"
+                    >
+                      <option value="Normandía / Engativá">Normandía / Engativá</option>
+                      <option value="Chapinero">Chapinero</option>
+                      <option value="Norte (Usaquén/Suba)">Norte (Usaquén/Suba)</option>
+                      <option value="Centro / Sur">Centro / Sur</option>
+                      <option value="Nacional">Nacional (Fuera de Bogotá)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 border-t pt-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">
+                  2. Datos de su Mascota (Opcional)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Nombre Peludo</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Toby"
+                      value={newPetName}
+                      onChange={(e) => setNewPetName(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Raza</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Schnauzer"
+                      value={newPetBreed}
+                      onChange={(e) => setNewPetBreed(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Edad</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: 3 años"
+                      value={newPetAge}
+                      onChange={(e) => setNewPetAge(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Proteína Preferida</label>
+                    <select
+                      value={newPetProtein}
+                      onChange={(e) => setNewPetProtein(e.target.value as any)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none bg-white"
+                    >
+                      <option value="Galletas">Galletas Horneadas</option>
+                      <option value="Res">Deshidratado de Res</option>
+                      <option value="Pollo">Deshidratado de Pollo</option>
+                      <option value="Cerdo">Deshidratado de Cerdo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Alergias o Cuidados</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Intolerancia al pollo"
+                      value={newPetAllergies}
+                      onChange={(e) => setNewPetAllergies(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowNewClientModal(false)}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-100 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-[#334c5c] text-[#f8b46b] hover:bg-[#273a46] shadow-md transition"
+                >
+                  Guardar Cliente en CRM
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: AGREGAR MASCOTA A TUTOR EXISTENTE */}
+      {targetClientIdForPet && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border-2 border-[#334c5c]">
+            <div className="flex justify-between items-center mb-4 border-b pb-2">
+              <h3 className="text-base font-black text-[#334c5c]">
+                + Agregar Mascota
+              </h3>
+              <button type="button" onClick={() => setTargetClientIdForPet(null)}>
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddPetToClient} className="space-y-3">
+              <div>
+                <label className="text-[11px] font-bold text-gray-600 block mb-1">Nombre de la Mascota *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: Rocky"
+                  value={newPetName}
+                  onChange={(e) => setNewPetName(e.target.value)}
+                  className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-600 block mb-1">Raza</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Pug"
+                    value={newPetBreed}
+                    onChange={(e) => setNewPetBreed(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-600 block mb-1">Edad</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: 2 años"
+                    value={newPetAge}
+                    onChange={(e) => setNewPetAge(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-600 block mb-1">Proteína Favorita</label>
+                <select
+                  value={newPetProtein}
+                  onChange={(e) => setNewPetProtein(e.target.value as any)}
+                  className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#334c5c] focus:outline-none bg-white"
+                >
+                  <option value="Galletas">Galletas Horneadas</option>
+                  <option value="Res">Deshidratado de Res</option>
+                  <option value="Pollo">Deshidratado de Pollo</option>
+                  <option value="Cerdo">Deshidratado de Cerdo</option>
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setTargetClientIdForPet(null)}
+                  className="flex-1 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 text-xs font-bold bg-[#334c5c] text-[#f8b46b] rounded-xl shadow"
+                >
+                  Agregar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
