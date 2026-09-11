@@ -27,7 +27,7 @@ export const App: React.FC = () => {
   const [pinError, setPinError] = useState<string>('');
   const [showPinModal, setShowPinModal] = useState<boolean>(false);
   
-  // Estado del módulo activo: 'dashboard' | 'produccion' | 'rutas'
+  // Estado del módulo activo: 'dashboard' | 'produccion' | 'rutas' | 'crm'
   const [currentModule, setCurrentModule] = useState<string>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
@@ -244,10 +244,7 @@ export const App: React.FC = () => {
             <button
               key={item.id}
               type="button"
-              onClick={() => {
-                console.log("Cambiando a módulo:", item.id);
-                setCurrentModule(item.id);
-              }}
+              onClick={() => setCurrentModule(item.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
                 isActive
                   ? 'bg-[#334c5c] text-[#f8b46b] shadow-sm border border-[#f8b46b]'
@@ -352,6 +349,13 @@ export const App: React.FC = () => {
               </div>
             )}
 
+            {/* VISTA 3: CRM CANINO & CUMPLEAÑOS DE MASCOTAS */}
+            {currentModule === 'crm' && (
+              <div className="space-y-4">
+                <ClientsPetsView />
+              </div>
+            )}
+
             {/* VISTA 0: DASHBOARD / RESUMEN */}
             {currentModule === 'dashboard' && (
               <>
@@ -364,24 +368,24 @@ export const App: React.FC = () => {
                       Resumen General del Taller
                     </h2>
                     <p className="text-xs text-gray-500">
-                      Haz clic en las pestañas superiores o en el menú lateral para abrir <strong>"Rutas & Despachos"</strong> o <strong>"Producción & Mermas"</strong>.
+                      Gestiona mermas de recetas, rutas de despacho Bogotá y fidelización de clientes.
                     </p>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button 
                       type="button"
-                      onClick={() => setCurrentModule('rutas')}
-                      className="text-xs font-black bg-[#334c5c] text-[#f8b46b] hover:bg-[#273a46] px-3.5 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5"
+                      onClick={() => setCurrentModule('crm')}
+                      className="text-xs font-black bg-[#f8b46b] text-[#334c5c] hover:bg-[#e29d53] px-3.5 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5"
                     >
-                      <MapPin className="w-3.5 h-3.5" /> Ver Rutas Bogotá
+                      <Users className="w-3.5 h-3.5" /> Ver CRM Mascotas
                     </button>
                     <button 
                       type="button"
-                      onClick={() => setCurrentModule('produccion')}
-                      className="text-xs font-bold text-[#334c5c] border border-[#334c5c] hover:bg-gray-100 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5"
+                      onClick={() => setCurrentModule('rutas')}
+                      className="text-xs font-bold bg-[#334c5c] text-[#f8b46b] hover:bg-[#273a46] px-3.5 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5"
                     >
-                      <Package className="w-3.5 h-3.5" /> Registrar Lote
+                      <MapPin className="w-3.5 h-3.5" /> Rutas Bogotá
                     </button>
                   </div>
                 </div>
@@ -416,17 +420,30 @@ export const App: React.FC = () => {
                   <p className="text-xs sm:text-sm text-gray-600 mb-4">
                     Selecciona a dónde deseas dirigirte hoy en tu taller de Normandía:
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentModule('crm')}
+                      className="p-4 rounded-xl border border-gray-200 hover:border-[#334c5c] text-left hover:bg-gray-50 transition"
+                    >
+                      <h4 className="font-bold text-sm text-[#334c5c] flex items-center gap-2">
+                        <Users className="w-4 h-4 text-[#f8b46b]" /> 1. CRM & Cumpleaños
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Ver tutores, alergias y saludar a los peludos cumpleañeros por WhatsApp.
+                      </p>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => setCurrentModule('rutas')}
                       className="p-4 rounded-xl border border-gray-200 hover:border-[#334c5c] text-left hover:bg-gray-50 transition"
                     >
                       <h4 className="font-bold text-sm text-[#334c5c] flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-[#ff7043]" /> 1. Planificador de Rutas & Despachos
+                        <MapPin className="w-4 h-4 text-[#ff7043]" /> 2. Rutas & Despachos
                       </h4>
                       <p className="text-xs text-gray-500 mt-1">
-                        Ver los 4 pedidos de hoy organizados por zonas (Chapinero, Norte, Normandía) y abrir la ruta en Google Maps.
+                        Enrutamiento por zonas y apertura directa de la ruta en Google Maps.
                       </p>
                     </button>
 
@@ -436,10 +453,10 @@ export const App: React.FC = () => {
                       className="p-4 rounded-xl border border-gray-200 hover:border-[#334c5c] text-left hover:bg-gray-50 transition"
                     >
                       <h4 className="font-bold text-sm text-[#334c5c] flex items-center gap-2">
-                        <Package className="w-4 h-4 text-[#f8b46b]" /> 2. Registro de Lotes & Control de Mermas
+                        <Package className="w-4 h-4 text-[#7cb342]" /> 3. Registro de Lotes
                       </h4>
                       <p className="text-xs text-gray-500 mt-1">
-                        Calcular mermas reales de deshidratado/horno e ingresar pesos crudos vs. terminados.
+                        Cálculo de mermas de deshidratado y balance de materias primas.
                       </p>
                     </button>
                   </div>
@@ -448,13 +465,16 @@ export const App: React.FC = () => {
             )}
 
             {/* Módulos en preparación */}
-            {currentModule !== 'dashboard' && currentModule !== 'produccion' && currentModule !== 'rutas' && (
+            {currentModule !== 'dashboard' && 
+             currentModule !== 'produccion' && 
+             currentModule !== 'rutas' && 
+             currentModule !== 'crm' && (
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center space-y-3">
                 <h3 className="text-lg font-black text-[#334c5c]">
                   Módulo en preparación
                 </h3>
                 <p className="text-xs text-gray-500">
-                  Estamos integrando los módulos paso a paso. Puedes alternar libremente entre <strong>"Rutas & Despachos"</strong> y <strong>"Producción & Mermas"</strong> con las pestañas superiores.
+                  Usa las pestañas superiores para alternar entre <strong>"Producción & Mermas"</strong>, <strong>"Rutas & Despachos"</strong> y <strong>"CRM Canino"</strong>.
                 </p>
               </div>
             )}
