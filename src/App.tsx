@@ -8,15 +8,12 @@ import {
   DollarSign, 
   Bot, 
   Tag, 
-  Settings, 
   LogOut, 
   Lock, 
   Printer, 
-  MessageSquare, 
-  ShieldCheck, 
-  Sparkles,
   Menu,
-  X
+  X,
+  Compass
 } from 'lucide-react';
 
 import PublicStoreView from './components/PublicStoreView';
@@ -24,27 +21,27 @@ import ProductionView from './components/ProductionView';
 import DeliveryRoutePlannerView from './components/DeliveryRoutePlannerView';
 
 export const App: React.FC = () => {
-  // Estado de vista actual
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<string>('');
   const [showPinModal, setShowPinModal] = useState<boolean>(false);
+  
+  // Estado del módulo activo: 'dashboard' | 'produccion' | 'rutas'
   const [currentModule, setCurrentModule] = useState<string>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
-  // Escuchar si la URL tiene hash #admin para abrir el acceso sigiloso
+  // Auto-activar si tiene hash #admin
   useEffect(() => {
-    const handleHashChange = () => {
-      if (window.location.hash === '#admin') {
+    const handleHash = () => {
+      if (window.location.hash.includes('admin')) {
         setShowPinModal(true);
       }
     };
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
-  // Validación de PIN administrativo (por defecto '1234' o '0000')
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (pinInput === '1234' || pinInput === '0000') {
@@ -53,7 +50,7 @@ export const App: React.FC = () => {
       setPinInput('');
       setPinError('');
     } else {
-      setPinError('PIN incorrecto. Intenta de nuevo.');
+      setPinError('PIN incorrecto. Intenta con 1234');
       setPinInput('');
     }
   };
@@ -64,12 +61,11 @@ export const App: React.FC = () => {
     setCurrentModule('dashboard');
   };
 
-  // 1. SI ES CLIENTE: Mostrar la Tienda Pública Oficial
+  // 1. TIENDA PÚBLICA PARA CLIENTES
   if (!isAdmin) {
     return (
       <div className="relative">
-        {/* Barra superior de la tienda pública */}
-        <header className="bg-[#334c5c] text-white py-3 px-4 sm:px-8 flex items-center justify-between border-b border-[#f8b46b]/40">
+        <header className="bg-[#334c5c] text-white py-3 px-4 sm:px-8 flex items-center justify-between border-b border-[#f8b46b]/40 sticky top-0 z-50">
           <div 
             className="flex items-center gap-3 cursor-pointer select-none"
             onClick={() => {
@@ -97,29 +93,27 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <a 
               href="https://api.whatsapp.com/send?phone=573205714504" 
               target="_blank" 
               rel="noreferrer"
-              className="hidden sm:flex items-center gap-1.5 bg-[#25d366] hover:bg-[#20ba59] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm transition"
+              className="hidden sm:flex items-center gap-1.5 bg-[#25d366] hover:bg-[#20ba59] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm transition"
             >
               📲 WhatsApp Directo
             </a>
             <button
               onClick={() => setShowPinModal(true)}
-              className="text-xs text-gray-300 hover:text-white bg-[#22333e] px-2.5 py-1 rounded-lg border border-gray-700 transition"
+              className="text-xs font-bold flex items-center gap-1 text-[#f8b46b] bg-[#22333e] px-3 py-1.5 rounded-xl border border-gray-700 hover:border-[#f8b46b] transition"
               title="Acceso Taller del Chef"
             >
-              <Lock className="w-3.5 h-3.5" />
+              <Lock className="w-3.5 h-3.5" /> Acceso Chef
             </button>
           </div>
         </header>
 
-        {/* Vista de Tienda Pública */}
         <PublicStoreView />
 
-        {/* Modal PIN */}
         {showPinModal && (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border-2 border-[#334c5c]">
@@ -128,7 +122,7 @@ export const App: React.FC = () => {
               </div>
               <h3 className="text-xl font-black text-[#334c5c]">Acceso Taller del Chef</h3>
               <p className="text-xs text-gray-500 mt-1 mb-5">
-                Ingresa el PIN de seguridad de 4 dígitos para acceder al panel de gestión de Cachorro Feliz.
+                Ingresa el PIN de seguridad (por defecto: <strong>1234</strong>)
               </p>
 
               <form onSubmit={handlePinSubmit} className="space-y-4">
@@ -139,7 +133,7 @@ export const App: React.FC = () => {
                   value={pinInput}
                   onChange={(e) => setPinInput(e.target.value)}
                   placeholder="••••"
-                  className="w-40 text-center tracking-[1em] text-2xl font-bold py-2 border-2 border-[#334c5c] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f8b46b] mx-auto block"
+                  className="w-40 text-center tracking-[0.8em] text-2xl font-bold py-2 border-2 border-[#334c5c] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f8b46b] mx-auto block"
                 />
 
                 {pinError && (
@@ -154,15 +148,15 @@ export const App: React.FC = () => {
                       setPinError('');
                       window.location.hash = '';
                     }}
-                    className="flex-1 py-2 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-100 transition"
+                    className="flex-1 py-2.5 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-100 transition"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2 rounded-xl text-xs font-bold bg-[#334c5c] hover:bg-[#283c49] text-white shadow-md transition"
+                    className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-[#334c5c] hover:bg-[#283c49] text-white shadow-md transition"
                   >
-                    Ingresar al Panel
+                    Entrar al Panel
                   </button>
                 </div>
               </form>
@@ -173,24 +167,25 @@ export const App: React.FC = () => {
     );
   }
 
-  // 2. SI ES ADMIN (CHEF JAVIER): Panel Interno del Taller
-  const navigationItems = [
+  // 2. PANEL ADMINISTRATIVO DEL CHEF JAVIER
+  const menuItems = [
     { id: 'dashboard', label: 'Resumen Taller', icon: ChefHat },
     { id: 'produccion', label: 'Producción & Mermas', icon: Package },
     { id: 'rutas', label: 'Rutas & Despachos', icon: MapPin },
-    { id: 'crm', label: 'CRM Clientes & Mascotas', icon: Users },
-    { id: 'finanzas', label: 'Finanzas & Rentabilidad', icon: DollarSign },
-    { id: 'etiquetas', label: 'Diseñador de Etiquetas', icon: Tag },
+    { id: 'crm', label: 'CRM Canino', icon: Users },
+    { id: 'finanzas', label: 'Finanzas & P&L', icon: DollarSign },
+    { id: 'etiquetas', label: 'Diseñador Etiquetas', icon: Tag },
     { id: 'ia', label: 'Asistente IA (Gemini)', icon: Bot },
     { id: 'impresion', label: 'Rótulos Térmicos', icon: Printer },
   ];
 
   return (
     <div className="min-h-screen bg-[#f5f3f0] flex flex-col font-sans">
-      {/* Cabecera del Panel */}
+      {/* Barra de navegación superior */}
       <header className="bg-[#334c5c] text-white px-4 sm:px-6 py-3 shadow-md flex items-center justify-between border-b-2 border-[#f8b46b] sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <button 
+            type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-1.5 rounded-lg bg-[#273a46] text-[#f8b46b]"
           >
@@ -213,19 +208,21 @@ export const App: React.FC = () => {
               PANEL DEL CHEF JAVIER
             </h1>
             <span className="text-[10px] text-gray-300 uppercase tracking-wider">
-              Taller & Obrador Cachorro Feliz
+              Normandía (Cra 73 # 48-43) • Oreo C.E.O. 🐾
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
+            type="button"
             onClick={() => setIsAdmin(false)}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-bold bg-[#f8b46b] hover:bg-[#e29d53] text-[#334c5c] px-3 py-1.5 rounded-xl shadow-sm transition"
+            className="flex items-center gap-1.5 text-xs font-bold bg-[#f8b46b] hover:bg-[#e29d53] text-[#334c5c] px-3 py-1.5 rounded-xl shadow-sm transition"
           >
-            <ShoppingBag className="w-3.5 h-3.5" /> Ver Tienda Pública
+            <ShoppingBag className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Ver</span> Tienda
           </button>
           <button
+            type="button"
             onClick={handleLogout}
             className="flex items-center gap-1 text-xs font-semibold bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-xl transition"
           >
@@ -234,23 +231,53 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Contenedor Principal */}
+      {/* Pestañas de Acceso Rápido Directo (Tabs superiores) */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-8 py-2 overflow-x-auto flex items-center gap-2 scrollbar-none">
+        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mr-2 hidden sm:inline">
+          Navegación:
+        </span>
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = currentModule === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                console.log("Cambiando a módulo:", item.id);
+                setCurrentModule(item.id);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                isActive
+                  ? 'bg-[#334c5c] text-[#f8b46b] shadow-sm border border-[#f8b46b]'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Estructura Principal */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Desktop */}
-        <aside className="hidden md:flex flex-col w-64 bg-[#2b404e] text-white p-4 space-y-2 border-r border-[#334c5c]/40">
-          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-3 py-1">
+        <aside className="hidden md:flex flex-col w-64 bg-[#2b404e] text-white p-4 space-y-1.5 border-r border-[#334c5c]/40">
+          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-3 py-1 mb-1">
             Módulos del Taller
           </div>
-          {navigationItems.map((item) => {
+          {menuItems.map((item) => {
             const Icon = item.icon;
-            const active = currentModule === item.id;
+            const isActive = currentModule === item.id;
             return (
               <button
                 key={item.id}
+                type="button"
                 onClick={() => setCurrentModule(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition text-left ${
-                  active 
-                    ? 'bg-[#f8b46b] text-[#334c5c] shadow-sm' 
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left cursor-pointer ${
+                  isActive 
+                    ? 'bg-[#f8b46b] text-[#334c5c] shadow-md font-black' 
                     : 'text-gray-200 hover:bg-[#334c5c]'
                 }`}
               >
@@ -261,37 +288,39 @@ export const App: React.FC = () => {
           })}
 
           <div className="pt-6 mt-auto border-t border-gray-600/50 text-[11px] text-gray-400 px-3 space-y-1">
-            <p className="font-bold text-gray-300">Bogotá, Normandía</p>
-            <p>Salida: Cra 73 # 48-43</p>
-            <p className="text-[10px] text-[#f8b46b]">Oreo C.E.O. Activo 🐾</p>
+            <p className="font-bold text-gray-200">Taller Central Normandía</p>
+            <p className="text-gray-400">Cra 73 # 48-43, Bogotá</p>
+            <p className="text-[10px] text-[#f8b46b] font-semibold">Despachos diarios activos 🛵</p>
           </div>
         </aside>
 
         {/* Menú Mobile Drawer */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)}>
+          <div className="fixed inset-0 z-50 bg-black/60 md:hidden" onClick={() => setMobileMenuOpen(false)}>
             <div 
-              className="w-64 bg-[#2b404e] text-white h-full p-4 space-y-2"
+              className="w-64 bg-[#2b404e] text-white h-full p-4 space-y-2 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#f8b46b]">Módulos</span>
-                <button onClick={() => setMobileMenuOpen(false)}>
+              <div className="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#f8b46b]">Módulos del Chef</span>
+                <button type="button" onClick={() => setMobileMenuOpen(false)}>
                   <X className="w-5 h-5 text-gray-300" />
                 </button>
               </div>
-              {navigationItems.map((item) => {
+              {menuItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = currentModule === item.id;
                 return (
                   <button
                     key={item.id}
+                    type="button"
                     onClick={() => {
                       setCurrentModule(item.id);
                       setMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition text-left ${
-                      currentModule === item.id 
-                        ? 'bg-[#f8b46b] text-[#334c5c]' 
+                      isActive 
+                        ? 'bg-[#f8b46b] text-[#334c5c] font-black' 
                         : 'text-gray-200 hover:bg-[#334c5c]'
                     }`}
                   >
@@ -304,45 +333,63 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Área de Trabajo Dinámica */}
+        {/* Zona de Renderizado Principal */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-8">
           <div className="max-w-6xl mx-auto space-y-6">
 
-            {/* SI SELECCIONAS 'PRODUCCIÓN & MERMAS' -> MUESTRA PRODUCTIONVIEW */}
-            {currentModule === 'produccion' ? (
-              <ProductionView />
-            ) : (
-              /* DE LO CONTRARIO -> MUESTRA EL DASHBOARD PRINCIPAL */
+            {/* VISTA 1: PRODUCCIÓN Y MERMAS */}
+            {currentModule === 'produccion' && (
+              <div className="space-y-4">
+                <ProductionView />
+              </div>
+            )}
+
+            {/* VISTA 2: RUTAS Y DESPACHOS BOGOTÁ */}
+            {currentModule === 'rutas' && (
+              <div className="space-y-4">
+                <DeliveryRoutePlannerView />
+              </div>
+            )}
+
+            {/* VISTA 0: DASHBOARD / RESUMEN */}
+            {currentModule === 'dashboard' && (
               <>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#f8b46b] bg-[#334c5c] px-2.5 py-0.5 rounded-full">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#f8b46b] bg-[#334c5c] px-2.5 py-0.5 rounded-full inline-block">
                       Módulo Operativo Activo
                     </span>
                     <h2 className="text-2xl font-black text-[#334c5c] mt-1">
-                      {navigationItems.find(i => i.id === currentModule)?.label || 'Resumen Taller'}
+                      Resumen General del Taller
                     </h2>
                     <p className="text-xs text-gray-500">
-                      Control integral de formulaciones artesanales, costos e inventario.
+                      Haz clic en las pestañas superiores o en el menú lateral para abrir <strong>"Rutas & Despachos"</strong> o <strong>"Producción & Mermas"</strong>.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex gap-2">
                     <button 
-                      onClick={() => setIsAdmin(false)}
-                      className="text-xs font-bold text-[#334c5c] border border-[#334c5c] hover:bg-gray-50 px-3.5 py-2 rounded-xl transition"
+                      type="button"
+                      onClick={() => setCurrentModule('rutas')}
+                      className="text-xs font-black bg-[#334c5c] text-[#f8b46b] hover:bg-[#273a46] px-3.5 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5"
                     >
-                      Ir a Tienda Clientes
+                      <MapPin className="w-3.5 h-3.5" /> Ver Rutas Bogotá
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setCurrentModule('produccion')}
+                      className="text-xs font-bold text-[#334c5c] border border-[#334c5c] hover:bg-gray-100 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5"
+                    >
+                      <Package className="w-3.5 h-3.5" /> Registrar Lote
                     </button>
                   </div>
                 </div>
 
-                {/* Tarjetas de Métricas Rápidas */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
                     <span className="text-xs font-bold text-gray-400 block uppercase">Pedidos Hoy</span>
                     <span className="text-2xl font-black text-[#334c5c]">12 pedidos</span>
-                    <span className="text-[11px] text-green-600 font-bold block mt-1">✓ 100% WhatsApp listos</span>
+                    <span className="text-[11px] text-green-600 font-bold block mt-1">✓ Listos para despacho</span>
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
                     <span className="text-xs font-bold text-gray-400 block uppercase">Producción Galletas</span>
@@ -351,28 +398,64 @@ export const App: React.FC = () => {
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
                     <span className="text-xs font-bold text-gray-400 block uppercase">Deshidratados Res/Pollo</span>
-                    <span className="text-2xl font-black text-[#ff7043]">6.2 kg en deshidratador</span>
+                    <span className="text-2xl font-black text-[#ff7043]">6.2 kg en ciclo</span>
                     <span className="text-[11px] text-gray-500 block mt-1">Merma estimada: ~65%</span>
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
                     <span className="text-xs font-bold text-gray-400 block uppercase">Margen Promedio</span>
                     <span className="text-2xl font-black text-[#7cb342]">68.4%</span>
-                    <span className="text-[11px] text-gray-500 block mt-1">Punto de equilibrio superado</span>
+                    <span className="text-[11px] text-gray-500 block mt-1">Rentabilidad asegurada</span>
                   </div>
                 </div>
 
-                {/* Estado del Taller */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                  <h3 className="text-base font-bold text-[#334c5c] mb-3">
-                    🐾 Estado del Obrador de Normandía
+                  <h3 className="text-base font-bold text-[#334c5c] mb-2 flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-[#f8b46b]" /> Atajos Operativos del Chef
                   </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                    Bienvenido de nuevo, <strong>Chef Javier</strong>. El taller está listo con la formulación oficial de 4 proteínas: 
-                    <strong> Galletas de avena y calabaza</strong>, <strong>Deshidratados de Res</strong>, <strong>Pollo campesino</strong> y <strong>Lomo de Cerdo</strong>. 
-                    Haz clic en <strong>"Producción & Mermas"</strong> en el menú lateral para calcular mermas y crear lotes.
+                  <p className="text-xs sm:text-sm text-gray-600 mb-4">
+                    Selecciona a dónde deseas dirigirte hoy en tu taller de Normandía:
                   </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentModule('rutas')}
+                      className="p-4 rounded-xl border border-gray-200 hover:border-[#334c5c] text-left hover:bg-gray-50 transition"
+                    >
+                      <h4 className="font-bold text-sm text-[#334c5c] flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-[#ff7043]" /> 1. Planificador de Rutas & Despachos
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Ver los 4 pedidos de hoy organizados por zonas (Chapinero, Norte, Normandía) y abrir la ruta en Google Maps.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentModule('produccion')}
+                      className="p-4 rounded-xl border border-gray-200 hover:border-[#334c5c] text-left hover:bg-gray-50 transition"
+                    >
+                      <h4 className="font-bold text-sm text-[#334c5c] flex items-center gap-2">
+                        <Package className="w-4 h-4 text-[#f8b46b]" /> 2. Registro de Lotes & Control de Mermas
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Calcular mermas reales de deshidratado/horno e ingresar pesos crudos vs. terminados.
+                      </p>
+                    </button>
+                  </div>
                 </div>
               </>
+            )}
+
+            {/* Módulos en preparación */}
+            {currentModule !== 'dashboard' && currentModule !== 'produccion' && currentModule !== 'rutas' && (
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center space-y-3">
+                <h3 className="text-lg font-black text-[#334c5c]">
+                  Módulo en preparación
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Estamos integrando los módulos paso a paso. Puedes alternar libremente entre <strong>"Rutas & Despachos"</strong> y <strong>"Producción & Mermas"</strong> con las pestañas superiores.
+                </p>
+              </div>
             )}
 
           </div>
@@ -381,4 +464,5 @@ export const App: React.FC = () => {
     </div>
   );
 };
+
 export default App;
