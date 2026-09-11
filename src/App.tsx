@@ -21,6 +21,7 @@ import {
 
 import PublicStoreView from './components/PublicStoreView';
 import ProductionView from './components/ProductionView';
+import DeliveryRoutePlannerView from './components/DeliveryRoutePlannerView';
 
 export const App: React.FC = () => {
   // Estado de vista actual
