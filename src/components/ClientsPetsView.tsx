@@ -290,14 +290,3 @@ export const ClientsPetsView: React.FC = () => {
 };
 
 export default ClientsPetsView;
-📂 Paso 2: Conectar el CRM en src/App.tsx
-Solo necesitas hacer dos pequeñas adiciones en tu src/App.tsx:
-
-En la parte superior, importa el nuevo componente:
-import ClientsPetsView from './components/ClientsPetsView';
-Dentro del <main>, abajo de donde está currentModule === 'rutas', agrega:
-{currentModule === 'crm' && (
-  <div className="space-y-4">
-    <ClientsPetsView />
-  </div>
-)}
