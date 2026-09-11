@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 import PublicStoreView from './components/PublicStoreView';
+import ProductionView from './components/ProductionView';
 
 export const App: React.FC = () => {
   // Estado de vista actual
@@ -42,7 +43,7 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Validación de PIN administrativo (por defecto '1234' o el configurado)
+  // Validación de PIN administrativo (por defecto '1234' o '0000')
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (pinInput === '1234' || pinInput === '0000') {
@@ -62,16 +63,15 @@ export const App: React.FC = () => {
     setCurrentModule('dashboard');
   };
 
-  // Si el usuario es un cliente en la tienda pública
+  // 1. SI ES CLIENTE: Mostrar la Tienda Pública Oficial
   if (!isAdmin) {
     return (
       <div className="relative">
-        {/* Barra superior discreta */}
+        {/* Barra superior de la tienda pública */}
         <header className="bg-[#334c5c] text-white py-3 px-4 sm:px-8 flex items-center justify-between border-b border-[#f8b46b]/40">
           <div 
             className="flex items-center gap-3 cursor-pointer select-none"
             onClick={() => {
-              // Atajo secreto: clic en el logo
               window.location.hash = 'admin';
               setShowPinModal(true);
             }}
@@ -115,10 +115,10 @@ export const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Tienda Pública Oficial */}
+        {/* Vista de Tienda Pública */}
         <PublicStoreView />
 
-        {/* Modal de Acceso Sigiloso con PIN */}
+        {/* Modal PIN */}
         {showPinModal && (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border-2 border-[#334c5c]">
@@ -172,7 +172,7 @@ export const App: React.FC = () => {
     );
   }
 
-  // Menú de navegación del panel administrativo
+  // 2. SI ES ADMIN (CHEF JAVIER): Panel Interno del Taller
   const navigationItems = [
     { id: 'dashboard', label: 'Resumen Taller', icon: ChefHat },
     { id: 'produccion', label: 'Producción & Mermas', icon: Package },
@@ -186,7 +186,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f3f0] flex flex-col font-sans">
-      {/* Barra de Navegación Administrativa */}
+      {/* Cabecera del Panel */}
       <header className="bg-[#334c5c] text-white px-4 sm:px-6 py-3 shadow-md flex items-center justify-between border-b-2 border-[#f8b46b] sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <button 
@@ -233,7 +233,7 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Contenedor Principal con Menú Lateral */}
+      {/* Contenedor Principal */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Desktop */}
         <aside className="hidden md:flex flex-col w-64 bg-[#2b404e] text-white p-4 space-y-2 border-r border-[#334c5c]/40">
@@ -306,65 +306,74 @@ export const App: React.FC = () => {
         {/* Área de Trabajo Dinámica */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-8">
           <div className="max-w-6xl mx-auto space-y-6">
-            {/* Cabecera del Módulo */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#f8b46b] bg-[#334c5c] px-2.5 py-0.5 rounded-full">
-                  Módulo Operativo Activo
-                </span>
-                <h2 className="text-2xl font-black text-[#334c5c] mt-1">
-                  {navigationItems.find(i => i.id === currentModule)?.label || 'Resumen Taller'}
-                </h2>
-                <p className="text-xs text-gray-500">
-                  Control integral de formulaciones artesanales, costos e inventario.
-                </p>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setIsAdmin(false)}
-                  className="text-xs font-bold text-[#334c5c] border border-[#334c5c] hover:bg-gray-50 px-3.5 py-2 rounded-xl transition"
-                >
-                  Ir a Tienda Clientes
-                </button>
-              </div>
-            </div>
+            {/* SI SELECCIONAS 'PRODUCCIÓN & MERMAS' -> MUESTRA PRODUCTIONVIEW */}
+            {currentModule === 'produccion' ? (
+              <ProductionView />
+            ) : (
+              /* DE LO CONTRARIO -> MUESTRA EL DASHBOARD PRINCIPAL */
+              <>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#f8b46b] bg-[#334c5c] px-2.5 py-0.5 rounded-full">
+                      Módulo Operativo Activo
+                    </span>
+                    <h2 className="text-2xl font-black text-[#334c5c] mt-1">
+                      {navigationItems.find(i => i.id === currentModule)?.label || 'Resumen Taller'}
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      Control integral de formulaciones artesanales, costos e inventario.
+                    </p>
+                  </div>
 
-            {/* Tarjetas de Métricas Rápidas del Taller */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
-                <span className="text-xs font-bold text-gray-400 block uppercase">Pedidos Hoy</span>
-                <span className="text-2xl font-black text-[#334c5c]">12 pedidos</span>
-                <span className="text-[11px] text-green-600 font-bold block mt-1">✓ 100% WhatsApp listos</span>
-              </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
-                <span className="text-xs font-bold text-gray-400 block uppercase">Producción Galletas</span>
-                <span className="text-2xl font-black text-[#f8b46b]">4.8 kg horneados</span>
-                <span className="text-[11px] text-gray-500 block mt-1">Lote #2024-BOG-04</span>
-              </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
-                <span className="text-xs font-bold text-gray-400 block uppercase">Deshidratados Res/Pollo</span>
-                <span className="text-2xl font-black text-[#ff7043]">6.2 kg en deshidratador</span>
-                <span className="text-[11px] text-gray-500 block mt-1">Merma estimada: ~65%</span>
-              </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
-                <span className="text-xs font-bold text-gray-400 block uppercase">Margen Promedio</span>
-                <span className="text-2xl font-black text-[#7cb342]">68.4%</span>
-                <span className="text-[11px] text-gray-500 block mt-1">Punto de equilibrio superado</span>
-              </div>
-            </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setIsAdmin(false)}
+                      className="text-xs font-bold text-[#334c5c] border border-[#334c5c] hover:bg-gray-50 px-3.5 py-2 rounded-xl transition"
+                    >
+                      Ir a Tienda Clientes
+                    </button>
+                  </div>
+                </div>
 
-            {/* Contenedor Informativo del Taller */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-              <h3 className="text-base font-bold text-[#334c5c] mb-3">
-                🐾 Estado del Obrador de Normandía
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                Bienvenido de nuevo, <strong>Chef Javier</strong>. El taller está listo con la formulación oficial de 4 proteínas: 
-                <strong> Galletas de avena y calabaza</strong>, <strong>Deshidratados de Res</strong>, <strong>Pollo campesino</strong> y <strong>Lomo de Cerdo</strong>. 
-                Los pedidos generados desde la tienda pública se enlazan automáticamente a tu WhatsApp para coordinar pago por Nequi/Daviplata y entrega con Picap.
-              </p>
-            </div>
+                {/* Tarjetas de Métricas Rápidas */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                    <span className="text-xs font-bold text-gray-400 block uppercase">Pedidos Hoy</span>
+                    <span className="text-2xl font-black text-[#334c5c]">12 pedidos</span>
+                    <span className="text-[11px] text-green-600 font-bold block mt-1">✓ 100% WhatsApp listos</span>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                    <span className="text-xs font-bold text-gray-400 block uppercase">Producción Galletas</span>
+                    <span className="text-2xl font-black text-[#f8b46b]">4.8 kg horneados</span>
+                    <span className="text-[11px] text-gray-500 block mt-1">Lote #2024-BOG-04</span>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                    <span className="text-xs font-bold text-gray-400 block uppercase">Deshidratados Res/Pollo</span>
+                    <span className="text-2xl font-black text-[#ff7043]">6.2 kg en deshidratador</span>
+                    <span className="text-[11px] text-gray-500 block mt-1">Merma estimada: ~65%</span>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                    <span className="text-xs font-bold text-gray-400 block uppercase">Margen Promedio</span>
+                    <span className="text-2xl font-black text-[#7cb342]">68.4%</span>
+                    <span className="text-[11px] text-gray-500 block mt-1">Punto de equilibrio superado</span>
+                  </div>
+                </div>
+
+                {/* Estado del Taller */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                  <h3 className="text-base font-bold text-[#334c5c] mb-3">
+                    🐾 Estado del Obrador de Normandía
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                    Bienvenido de nuevo, <strong>Chef Javier</strong>. El taller está listo con la formulación oficial de 4 proteínas: 
+                    <strong> Galletas de avena y calabaza</strong>, <strong>Deshidratados de Res</strong>, <strong>Pollo campesino</strong> y <strong>Lomo de Cerdo</strong>. 
+                    Haz clic en <strong>"Producción & Mermas"</strong> en el menú lateral para calcular mermas y crear lotes.
+                  </p>
+                </div>
+              </>
+            )}
+
           </div>
         </main>
       </div>
