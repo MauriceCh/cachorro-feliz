@@ -22,7 +22,7 @@ import PublicStoreView from './components/PublicStoreView';
 import ProductionView from './components/ProductionView';
 import DeliveryRoutePlannerView from './components/DeliveryRoutePlannerView';
 import ClientsPetsView from './components/ClientsPetsView';
-import InventoryView from './components/InventoryView';
+import { InventoryView } from './components/InventoryView';
 import LabelDesignerStickyView from './components/LabelDesignerStickyView';
 import FinancesView from './components/FinancesView';
 
